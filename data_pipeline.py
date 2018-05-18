@@ -14,18 +14,33 @@ from tensorflow.python import keras
 from PIL import Image
 import os
 import shutil
+import multiprocessing as mp
+from random import randint
+import imutils
 
 
 IMAGE_WIDTH = 80
 IMAGE_HEIGHT = 80
+NUM_CPU_CORES = 2
 
 def load_image(addr):
+    images = []
     # cv2 load images as BGR, convert it to RGB
     img = cv2.imread(addr)
     img = cv2.resize(img, (IMAGE_HEIGHT, IMAGE_WIDTH), interpolation=cv2.INTER_CUBIC)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = img.astype(np.float32)
-    return img
+    images.append(img)
+    # Horizontal flip image
+    images.append(cv2.flip(img,1))
+    # Maybe change this one to rotate randomly a set number of times?
+    for i in range(1):
+        images.append(imutils.rotate(img, randint(10, 350)))
+        # Rotatebount will rotate the image and add padding as needed,
+        # while rotate will keep the images original dimensions
+        # rotated = imutils.rotate_bound(image, angle)
+
+    imgs = [im.astype(np.float32) for im in images]
+    return imgs
 
 
 # Pulled from Tensorflow's TFRecord documentation
@@ -38,20 +53,32 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
+def parallel_write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsize):
+    print("Parallel write tfrecord file {}".format(data_type))
+    num_images = min(max_records, len(addrs))
+    processes = [mp.Process(target=write_tfrecord_file, args=(x, int(num_images / NUM_CPU_CORES * x), int(num_images / NUM_CPU_CORES * (x + 1)), addrs, labels, data_type)) for x in range(NUM_CPU_CORES)]
+    for p in processes:
+        p.start()
+    # Exit the completed processes
+    for p in processes:
+        p.join()
+
+
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
-def write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsize):
-    filename = '{}.tfrecords'.format(data_type)
-    max_records = min(max_records, len(addrs))
+def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_type):
+    filename = '{}_{}.tfrecords'.format(data_type, thread_num)
     # open the TFRecords file
     writer = tf.python_io.TFRecordWriter(filename)
-    for i in tqdm(range(max_records)):
-        img = load_image(addrs[i])
-        label = labels[i]
-        feature = {'{}/label'.format(data_type): _int64_feature(label), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
-        # Create an example protocol buffer
-        example = tf.train.Example(features=tf.train.Features(feature=feature))
-        # Serialize to string and write on the file
-        writer.write(example.SerializeToString())
+    # TODO: Need to provide some sort of indicator of progress (% complete)
+    for i in range(start_index, end_index):
+        imgs = load_image(addrs[i])
+        for img in imgs:
+            label = labels[i]
+            feature = {'{}/label'.format(data_type): _int64_feature(label), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
+            # Create an example protocol buffer
+            example = tf.train.Example(features=tf.train.Features(feature=feature))
+            # Serialize to string and write on the file
+            writer.write(example.SerializeToString())
     writer.close()
     sys.stdout.flush()
 
@@ -82,10 +109,9 @@ def generate_tfrecords(cat_dog_train_path):
     test_addrs = addrs[int(0.8 * len(addrs)):]
     test_labels = labels[int(0.8 * len(labels)):]
 
-    # train_filename = 'train.tfrecords'  # address to save the TFRecords file
-    write_tfrecord_file(train_addrs, train_labels, 'train', 1000)
-    write_tfrecord_file(val_addrs, val_labels, 'val', 1000)
-    write_tfrecord_file(test_addrs, test_labels, 'test', 1000)
+    parallel_write_tfrecord_file(train_addrs, train_labels, 'train', 10000)
+    parallel_write_tfrecord_file(val_addrs, val_labels, 'val', 10000)
+    parallel_write_tfrecord_file(test_addrs, test_labels, 'test', 10000)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -108,12 +134,14 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
     dataset = tf.data.TFRecordDataset(filenames=filenames)
     # Parse the serialized data in the TFRecords files.
     # This returns TensorFlow tensors for the image and labels.
-    dataset = dataset.map(_parse_function)
+    dataset = dataset.map(map_func=_parse_function, num_parallel_calls=NUM_CPU_CORES)
     if perform_shuffle:
         # Randomizes input using a window of 256 elements (read into memory)
         dataset = dataset.shuffle(buffer_size=256)
     dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
     dataset = dataset.batch(batch_size)  # Batch size to use
+    # How many elements (in this case batches) get consumed per epoch?                                         
+    dataset = dataset.prefetch(buffer_size=1)
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
