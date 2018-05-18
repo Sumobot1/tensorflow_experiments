@@ -8,6 +8,12 @@ from data_pipeline import generate_tfrecords, imgs_input_fn
 from models import cnn_model_fn, fast_cnn_model_fn
 
 
+def get_tfrecords(name):
+    records = glob.glob('{}*.tfrecords'.format(name))
+    records.sort()
+    return records
+
+
 def main(argv):
     machine_type = 'laptop' if '--laptop' in argv else 'desktop'
     # Need to set logging verbosity to INFO level or training loss will not print
@@ -33,11 +39,20 @@ def main(argv):
     logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=50)
 
     training_batch_size = 1 if machine_type == 'laptop' else 20
-    train_records = glob.glob('train*.tfrecords')
-    train_records.sort()
+    train_records = get_tfrecords('train')
+    val_records = get_tfrecords('val')
+    # glob.glob('train*.tfrecords')
+    # train_records.sort()
+
+
     # Steps is how many times to call next on the input function - ie how many batches to take in?
-    mnist_classifier.train(input_fn=lambda: imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=1, batch_size=training_batch_size), steps=10, hooks=[logging_hook])
-
-
+    repeat_count = 1
+    total_training_files = len(glob.glob(cat_dog_train_path)) * 1 + len(cat_dog_train_path)
+    total_num_steps = int(total_training_files / training_batch_size * repeat_count)
+    print("TOTAL FILES: {}, NUM_ROTATIONS: {}, TOTAL TRAINING FILES: {}, TOTAL NUM STEPS {}".format(len(cat_dog_train_path), 1, total_training_files, total_num_steps))
+    for i in range(5):
+        mnist_classifier.train(input_fn=lambda: imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=1, batch_size=training_batch_size), steps=total_num_steps, hooks=[logging_hook])
+        eval_results = mnist_classifier.evaluate(input_fn=lambda: imgs_input_fn(val_records, 'val', perform_shuffle=False, repeat_count=1))
+        print(eval_results)
 if __name__ == "__main__":
     main(sys.argv)
