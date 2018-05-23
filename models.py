@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from estimator_hooks import SuperWackHook
 
 def tf_model_estimator(logits, labels, predictions, mode):
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -11,12 +11,15 @@ def tf_model_estimator(logits, labels, predictions, mode):
     # It needs to be wrapped in tf.reduce_mean to work properly
 
     # loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits), name='ting')
+    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits), name='loss_layer')
+    acc, acc_op = tf.metrics.accuracy(labels=labels, predictions=predictions["classes"], name='accuracy_layer')
+    tensors_to_log = {'loss': loss, 'accuracy': acc_op}
+    wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50)
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
         train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, training_hooks=[wack_hook])
 
     # Add evaluation metrics (for EVAL mode)
     eval_metric_ops = {"accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions["classes"])}
