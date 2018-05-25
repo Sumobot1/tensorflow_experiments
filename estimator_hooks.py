@@ -43,7 +43,7 @@ class SuperWackHook(session_run_hook.SessionRunHook):
   """
 
   def __init__(self, tensors, every_n_iter=None, every_n_secs=None,
-               at_end=False, formatter=None):
+               at_end=False, formatter=None, total_num_steps=None):
     """Initializes a `LoggingTensorHook`.
     Args:
       tensors: `dict` that maps string-valued tags to tensors/tensor names,
@@ -80,13 +80,14 @@ class SuperWackHook(session_run_hook.SessionRunHook):
         tf.train.NeverTriggerTimer() if only_log_at_end else
         tf.train.SecondOrStepTimer(every_secs=every_n_secs, every_steps=every_n_iter))
     self._log_at_end = at_end
+    self._total_num_steps = total_num_steps
+
 
   def begin(self):
     self._timer.reset()
     self._iter_count = 0
     # Convert names to tensors if given
-    self._current_tensors = {tag: _as_graph_element(tensor)
-                             for (tag, tensor) in self._tensors.items()}
+    self._current_tensors = {tag: _as_graph_element(tensor) for (tag, tensor) in self._tensors.items()}
 
   def before_run(self, run_context):  # pylint: disable=unused-argument
     self._should_trigger = self._timer.should_trigger_for_step(self._iter_count)
@@ -96,33 +97,27 @@ class SuperWackHook(session_run_hook.SessionRunHook):
       return None
 
   def _log_tensors(self, tensor_values):
-    print("hello")
     original = np.get_printoptions()
     np.set_printoptions(suppress=True)
     elapsed_secs, _ = self._timer.update_last_triggered_step(self._iter_count)
     if self._formatter:
-      print("tensor values:")
       logging.info(self._formatter(tensor_values))
     else:
       stats = []
       for tag in self._tag_order:
-        stats.append("%s = %s" % (tag, tensor_values[tag]))
-      import pdb
-      print(stats)
-      # pdb.set_trace()
+        if tag is not 'batch_size':
+          stats.append('{}'.format("{} = {:7.4f}".format(tag, tensor_values[tag])))
+      stats = ['Step: {:5d}/{}'.format(self._iter_count, self._total_num_steps)] + stats
+      print("{}".format(', '.join(stats)), end='\n' if (self._total_num_steps - self._iter_count - tensor_values['batch_size'] <= 0) else '\r')
       if elapsed_secs is not None:
-        print("elapsed sec")
         logging.info("%s (%.3f sec)", ", ".join(stats), elapsed_secs)
       else:
-        print('some other sit')
         logging.info("%s", ", ".join(stats))
     np.set_printoptions(**original)
 
   def after_run(self, run_context, run_values):
     _ = run_context
     if self._should_trigger:
-      print("here")
-      # pdb.set_trace()
       self._log_tensors(run_values.results)
 
     self._iter_count += 1

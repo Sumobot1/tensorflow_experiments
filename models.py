@@ -1,7 +1,7 @@
 import tensorflow as tf
 from estimator_hooks import SuperWackHook
 
-def tf_model_estimator(logits, labels, predictions, mode):
+def tf_model_estimator(logits, labels, predictions, mode, params):
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
@@ -13,8 +13,9 @@ def tf_model_estimator(logits, labels, predictions, mode):
     # loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
     loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits), name='loss_layer')
     acc, acc_op = tf.metrics.accuracy(labels=labels, predictions=predictions["classes"], name='accuracy_layer')
-    tensors_to_log = {'loss': loss, 'accuracy': acc_op}
-    wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50)
+    batch_size = tf.shape(logits)[0]
+    tensors_to_log = {'loss': loss, 'accuracy': acc_op, 'batch_size': batch_size}
+    wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50, total_num_steps=params['total_num_steps'])
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
@@ -25,7 +26,7 @@ def tf_model_estimator(logits, labels, predictions, mode):
     eval_metric_ops = {"accuracy": tf.metrics.accuracy(labels=labels, predictions=predictions["classes"])}
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
-def cnn_model_fn(features, labels, mode):
+def cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Convolutional Layer #1
     conv1 = tf.layers.conv2d(inputs=features, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
@@ -49,10 +50,10 @@ def cnn_model_fn(features, labels, mode):
       "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 
-    return tf_model_estimator(logits, labels, predictions, mode)
+    return tf_model_estimator(logits, labels, predictions, mode, params)
 
 
-def fast_cnn_model_fn(features, labels, mode):
+def fast_cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Convolutional Layer #1
     conv1 = tf.layers.conv2d(inputs=features, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
@@ -70,4 +71,4 @@ def fast_cnn_model_fn(features, labels, mode):
       "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 
-    return tf_model_estimator(logits, labels, predictions, mode)
+    return tf_model_estimator(logits, labels, predictions, mode, params)
