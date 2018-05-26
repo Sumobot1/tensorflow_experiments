@@ -3,7 +3,9 @@ import sys
 import pdb
 import multiprocessing as mp
 import glob
+import shutil
 import os
+
 from data_pipeline import generate_tfrecords, imgs_input_fn
 from models import cnn_model_fn, fast_cnn_model_fn
 
@@ -28,20 +30,19 @@ def main(argv):
         for file in glob.glob('*.tfrecords'):
             os.remove(file)
         generate_tfrecords(cat_dog_train_path)
+    if '--clean' in sys.argv:
+        try:
+            shutil.rmtree('models/cat_dog_cnn_desktop/')
+        except:
+            print("Unable to remove directory - perhaps it does not exist?")
 
-    next_example, next_label = imgs_input_fn(['train.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
-    
     # A good way to debug programs like this is to run a tf.InteractiveSession()
     # sess = tf.InteractiveSession()
+    # next_example, next_label = imgs_input_fn(['train_0.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
 
-    # tensors_to_log = {"loss": "loss_layer",
-    #                   "accuracy": "accuracy_layer"}
-    # logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=50)
     training_batch_size = 1 if machine_type == 'laptop' else 20
     train_records = get_tfrecords('train')
     val_records = get_tfrecords('val')
-    # glob.glob('train*.tfrecords')
-    # train_records.sort()
 
     # Steps is how many times to call next on the input function - ie how many batches to take in?
     repeat_count = 5
@@ -53,9 +54,9 @@ def main(argv):
     if not os.path.exists('models'):
         os.makedirs('models')
     mnist_classifier = tf.estimator.Estimator(model_fn=model_fn, model_dir="models/cat_dog_cnn_{}".format(machine_type), params={'total_num_steps': total_num_steps})
-    for i in range(5):
-        hooks = []
-        mnist_classifier.train(input_fn=lambda: imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=1, batch_size=training_batch_size), steps=total_num_steps)
+    for i in range(10):
+        print("Latest checkpoint =====================: {}".format(mnist_classifier.latest_checkpoint()))
+        mnist_classifier.train(input_fn=lambda: imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=2, batch_size=training_batch_size), steps=total_num_steps)
         eval_results = mnist_classifier.evaluate(input_fn=lambda: imgs_input_fn(val_records, 'val', perform_shuffle=False, repeat_count=1))
         print(eval_results)
 
