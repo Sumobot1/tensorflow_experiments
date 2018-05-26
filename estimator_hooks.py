@@ -6,6 +6,7 @@ import six
 import numpy as np
 from tensorflow.python.platform import tf_logging as logging
 import pdb
+from termcolor import colored, cprint
 
 def _as_graph_element(obj):
   """Retrieves Graph element."""
@@ -90,7 +91,7 @@ class SuperWackHook(session_run_hook.SessionRunHook):
     self._current_tensors = {tag: _as_graph_element(tensor) for (tag, tensor) in self._tensors.items()}
 
   def before_run(self, run_context):  # pylint: disable=unused-argument
-    self._should_trigger = self._timer.should_trigger_for_step(self._iter_count)
+    self._should_trigger = self._timer.should_trigger_for_step(self._iter_count) or self._total_num_steps - 1 <= self._iter_count
     if self._should_trigger:
       return tf.train.SessionRunArgs(self._current_tensors)
     else:
@@ -107,8 +108,8 @@ class SuperWackHook(session_run_hook.SessionRunHook):
       for tag in self._tag_order:
         if tag is not 'batch_size':
           stats.append('{}'.format("{} = {:7.4f}".format(tag, tensor_values[tag])))
-      stats = ['Step: {:5d}/{}'.format(self._iter_count, self._total_num_steps)] + stats
-      print("{}".format(', '.join(stats)), end='\n' if (self._total_num_steps - self._iter_count - tensor_values['batch_size'] <= 0) else '\r')
+      stats = ['Step: {:5d}/{}'.format(self._iter_count, self._total_num_steps - 1)] + stats
+      cprint("{}".format(', '.join(stats)), 'green', end='\n' if (self._total_num_steps - self._iter_count - tensor_values['batch_size'] <= 0) else '\r')
       if elapsed_secs is not None:
         logging.info("%s (%.3f sec)", ", ".join(stats), elapsed_secs)
       else:

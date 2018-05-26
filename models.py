@@ -16,11 +16,11 @@ def tf_model_estimator(logits, labels, predictions, mode, params):
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits), name='loss_layer')
     acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(input=labels, axis=1), predictions=predictions["classes"], name='accuracy_layer')
     batch_size = tf.shape(logits)[0]
-    tensors_to_log = {'loss': loss, 'accuracy': acc_op, 'batch_size': batch_size}
+    tensors_to_log = {'loss': loss, 'accuracy': acc_op, 'batch_size': batch_size, 'logits[0]': logits[0][0], 'logits[1]': logits[0][1], 'labels[0]': labels[0][0], 'labels[1]': labels[0][1]}
     wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50, total_num_steps=params['total_num_steps'])
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        optimizer = tf.train.AdamOptimizer()#learning_rate=0.0001)
         train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, training_hooks=[wack_hook])
 
