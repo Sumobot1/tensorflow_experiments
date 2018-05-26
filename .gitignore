@@ -108,3 +108,6 @@ venv.bak/
 
 # models directory
 models/*
+
+# MNIST data directory
+MNIST-data/
