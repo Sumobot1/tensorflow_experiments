@@ -88,12 +88,12 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
     # TODO: Need to provide some sort of indicator of progress (% complete)
     for i in range(start_index, end_index):
         if (i % 100 == 0):
-            print('Thread {} completed {}'.format(thread_num, i))
+            print('Thread {} completed {}/{}'.format(thread_num, i - start_index, total_files))
         augment_data = True if data_type == 'train' else False
         imgs = load_image(addrs[i], augment_data)
         for img in imgs:
             label = labels[i]
-            feature = {'{}/label'.format(data_type): _int64_feature(label), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
+            feature = {'{}/label'.format(data_type): _bytes_feature(tf.compat.as_bytes(np.asarray(label).tostring())), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
             # Create an example protocol buffer
             example = tf.train.Example(features=tf.train.Features(feature=feature))
             # Serialize to string and write on the file
@@ -106,7 +106,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
 def generate_tfrecords(cat_dog_train_path):
     # read addresses and labels from the 'train' folder
     addrs = glob.glob(cat_dog_train_path)
-    labels = [0 if 'cat' in addr.split('/')[-1] else 1 for addr in addrs]  # 0 = Cat, 1 = Dog
+    labels = [[0, 1] if 'cat' in addr.split('/')[-1] else [1, 0] for addr in addrs]  # 0 = Cat, 1 = Dog
     # We will shuffle the dataset on read
     # Python zip() - Takes in n iterables and returns a list of tuples.
     # Each tuple is created from the ith element from each iterable
@@ -136,19 +136,20 @@ def generate_tfrecords(cat_dog_train_path):
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
 def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, batch_size=1):
     def _parse_function(serialized):
-        features = {'{}/label'.format(data_type): tf.FixedLenFeature([], tf.int64),
+        features = {'{}/label'.format(data_type): tf.FixedLenFeature([], tf.string),
                     '{}/image'.format(data_type): tf.FixedLenFeature([], tf.string)}
         # Parse the serialized data so we get a dict with our data.
         parsed_example = tf.parse_single_example(serialized=serialized, features=features)
         # Get the image as raw bytes.
         image_raw = parsed_example['{}/image'.format(data_type)]
-        label = tf.cast(parsed_example['{}/label'.format(data_type)], tf.int32)
+        label = tf.decode_raw(parsed_example['{}/label'.format(data_type)], tf.int64)
+        label = tf.cast(label, tf.float32)
+        label = tf.reshape(label, [2])
         # Decode the raw bytes so it becomes a tensor with type.
-        image = tf.decode_raw(image_raw, tf.float32)
-        image = tf.reshape(image, [IMAGE_HEIGHT, IMAGE_WIDTH, 3])
+        img = tf.reshape(tf.decode_raw(image_raw, tf.float32), [IMAGE_HEIGHT, IMAGE_WIDTH, 3])
         # Don't know if we need to center the image in this case...
         # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
-        return image, label
+        return img, label
 
     dataset = tf.data.TFRecordDataset(filenames=filenames)
     # Parse the serialized data in the TFRecords files.
@@ -160,7 +161,7 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
     dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
     dataset = dataset.batch(batch_size)  # Batch size to use
     # How many elements (in this case batches) get consumed per epoch?
-    dataset = dataset.prefetch(buffer_size=1)
+    dataset = dataset.prefetch(buffer_size=2)
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
