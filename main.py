@@ -44,9 +44,10 @@ def main(argv):
     # train_records.sort()
 
     # Steps is how many times to call next on the input function - ie how many batches to take in?
-    repeat_count = 1
-    total_training_files = len(glob.glob(cat_dog_train_path)) * repeat_count + len(cat_dog_train_path)
-    total_num_steps = int(total_training_files / training_batch_size * repeat_count)
+    repeat_count = 5
+    # Multiplied by 0.6 because training files are 60% of data
+    total_training_files = int(len(glob.glob(cat_dog_train_path)) * 0.6) * repeat_count
+    total_num_steps = int(total_training_files / training_batch_size)
     print("TOTAL FILES: {}, NUM_ROTATIONS: {}, TOTAL TRAINING FILES: {}, TOTAL NUM STEPS {}".format(len(cat_dog_train_path), 1, total_training_files, total_num_steps))
     model_fn = fast_cnn_model_fn if machine_type == 'laptop' else cnn_model_fn
     if not os.path.exists('models'):
@@ -57,5 +58,7 @@ def main(argv):
         mnist_classifier.train(input_fn=lambda: imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=1, batch_size=training_batch_size), steps=total_num_steps)
         eval_results = mnist_classifier.evaluate(input_fn=lambda: imgs_input_fn(val_records, 'val', perform_shuffle=False, repeat_count=1))
         print(eval_results)
+
+
 if __name__ == "__main__":
     main(sys.argv)

@@ -10,6 +10,7 @@ from tensorflow.python.keras.applications.vgg16 import VGG16
 from tensorflow.python.keras import models
 from tensorflow.python.keras import layers
 from tensorflow.python.keras.preprocessing import image
+from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
 from tensorflow.python import keras
 from PIL import Image
 import os
@@ -17,32 +18,43 @@ import shutil
 import multiprocessing as mp
 from random import randint
 import imutils
+from PIL import Image, ImageFilter
 
 
 IMAGE_WIDTH = 80
 IMAGE_HEIGHT = 80
 NUM_CPU_CORES = 6
+AUGMENT = 5
 
-
+# If there are too many zeros in the image, relu outputs zero, and will never recover.  Using Keras preprocessing function instead
+# https://datascience.stackexchange.com/questions/21955/tensorflow-regression-model-giving-same-prediction-every-time
+# https://github.com/keras-team/keras/issues/3687
+# https://github.com/hellochick/PSPNet-tensorflow/issues/7
+# https://datascience.stackexchange.com/questions/5706/what-is-the-dying-relu-problem-in-neural-networks
 def load_image(addr, augment_data):
+    datagen = ImageDataGenerator(
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest',
+        rescale=1. / 255)
     images = []
-    # cv2 load images as BGR, convert it to RGB
-    img = cv2.imread(addr)
-    img = cv2.resize(img, (IMAGE_HEIGHT, IMAGE_WIDTH), interpolation=cv2.INTER_CUBIC)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    images.append(img)
+    img = Image.open(addr).filter(ImageFilter.GaussianBlur(1)).resize((IMAGE_WIDTH, IMAGE_HEIGHT))
+    array = img_to_array(img)
+    array_normalized = ((array - array.min()) * (1. / (array.max() - array.min()) * 1)).astype('float32')
+    images.append(array_normalized)
     if augment_data:
-        # Horizontal flip image
-        images.append(cv2.flip(img, 1))
-        # Maybe change this one to rotate randomly a set number of times?
-        for i in range(1):
-            images.append(imutils.rotate(img, randint(10, 350)))
-            # Rotatebount will rotate the image and add padding as needed,
-            # while rotate will keep the images original dimensions
-            # rotated = imutils.rotate_bound(image, angle)
-
-    imgs = [im.astype(np.float32) for im in images]
-    return imgs
+        array = array.reshape((1,) + array.shape)
+        i = 0
+        for batch in datagen.flow(array, batch_size=1):
+            if i >= AUGMENT - 1:
+                break
+            images.append(np.reshape(batch, [80, 80, 3]))
+            i += 1
+    return images
 
 
 # Pulled from Tensorflow's TFRecord documentation
@@ -64,6 +76,7 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsi
     # Exit the completed processes
     for p in processes:
         p.join()
+    # write_tfrecord_file(0, int(num_images / NUM_CPU_CORES * 0), int(num_images / NUM_CPU_CORES * (0 + 1)), addrs, labels, data_type)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/

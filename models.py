@@ -1,6 +1,7 @@
 import tensorflow as tf
 from estimator_hooks import SuperWackHook
 
+
 def tf_model_estimator(logits, labels, predictions, mode, params):
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
