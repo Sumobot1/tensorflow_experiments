@@ -35,6 +35,10 @@ def main(argv):
             shutil.rmtree('models/cat_dog_cnn_desktop/')
         except:
             print("Unable to remove directory - perhaps it does not exist?")
+        try:
+            shutil.rmtree('models/cat_dog_cnn_laptop/')
+        except:
+            print("Unable to remove directory - perhaps it does not exist?")
 
     # A good way to debug programs like this is to run a tf.InteractiveSession()
     # sess = tf.InteractiveSession()
