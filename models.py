@@ -1,6 +1,6 @@
 import tensorflow as tf
 from estimator_hooks import SuperWackHook
-from abstract_layers import input_layer, conv_2d, max_pool_2d, flatten, dense
+from abstract_layers import input_layer, conv_2d, max_pool_2d, flatten, dense, dropout
 
 def tf_model_estimator(logits, labels, predictions, mode, params):
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -66,15 +66,12 @@ def fast_cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Convolutional Layer #1
     conv1 = conv_2d(features, 32, [3, 3], "same", "leaky_relu")
-    # conv1 = tf.layers.conv2d(inputs=features, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu)
     # Pooling Layer #1
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+    pool_1 = max_pool_2d(conv1, [2, 2], 2)
     # Dense Layer
-    pool1_flat = tf.layers.flatten(inputs=pool1)
+    pool1_flat = flatten(pool_1)
     # Logits Layer
-    logits = tf.layers.dense(inputs=pool1_flat, units=2)
+    logits = dense(pool1_flat, 2)
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
         "classes": tf.argmax(input=logits, axis=1),
