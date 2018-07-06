@@ -162,6 +162,9 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
     dataset = dataset.batch(batch_size)  # Batch size to use
     # How many elements (in this case batches) get consumed per epoch?
     dataset = dataset.prefetch(buffer_size=2)
+    # My added shit
+    # iterator = dataset.make_initializable_iterator()
+    # Working code =============================
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
