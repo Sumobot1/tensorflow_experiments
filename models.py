@@ -19,9 +19,10 @@ def tf_model_estimator(logits, labels, predictions, mode, params):
     tensors_to_log = {'loss': loss, 'accuracy': acc_op, 'batch_size': batch_size, 'logits[0]': logits[0][0], 'logits[1]': logits[0][1], 'labels[0]': labels[0][0], 'labels[1]': labels[0][1]}
     wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50, total_num_steps=params['total_num_steps'])
     if params["return_estimator"] == False:
+        print("here")
         # optimizer = tf.train.AdamOptimizer()
         # training_op = optimizer.minimize(loss, name="training_op")
-        return (loss, predictions['classes'])#tf.metrics.accuracy(labels=tf.argmax(input=labels, axis=1), predictions=predictions["classes"])) if mode == tf.estimator.ModeKeys.EVAL else (loss, training_op)
+        return (loss, predictions)#tf.metrics.accuracy(labels=tf.argmax(input=labels, axis=1), predictions=predictions["classes"])) if mode == tf.estimator.ModeKeys.EVAL else (loss, training_op)
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
         optimizer = tf.train.AdamOptimizer()#learning_rate=0.0001)
