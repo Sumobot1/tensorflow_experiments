@@ -5,7 +5,10 @@ import multiprocessing as mp
 import glob
 import shutil
 import os
+import numpy as np
+import time
 
+from functools import reduce
 from data_pipeline import generate_tfrecords, imgs_input_fn
 from models import cnn_model_fn, fast_cnn_model_fn
 
@@ -16,6 +19,28 @@ def get_tfrecords(name):
     return records
 
 
+def average(list):
+    return reduce(lambda x, y: x + y, list) / len(list)
+
+
+def create_val_dir():
+    validation_save_path = os.path.join(os.getcwd(), 'validation_results', time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
+    if not os.path.exists(validation_save_path):
+        os.makedirs(validation_save_path)
+    return validation_save_path
+
+
+def clean_model_dir():
+    try:
+        shutil.rmtree('models/cat_dog_cnn_desktop/')
+    except:
+        print("Unable to remove directory - perhaps it does not exist?")
+    try:
+        shutil.rmtree('models/cat_dog_cnn_laptop/')
+    except:
+        print("Unable to remove directory - perhaps it does not exist?")
+
+
 def main(argv):
     machine_type = 'laptop' if '--laptop' in argv else 'desktop'
     # If values are being printed using logging.info, need to set logging verbosity to INFO level or training loss will not print
@@ -24,22 +49,15 @@ def main(argv):
     tf.logging.set_verbosity(tf.logging.WARN)
     # Training data needs to be split into training, validation, and testing sets
     # This needs to be a complete (not relative) path, or glob will run into issues
-
     cat_dog_train_path = '/home/michael/Documents/DataSets/dogs_vs_cats_data/*.jpg' if machine_type == 'laptop' else '/home/michael/hard_drive/datasets/dogs_vs_cats_data/train/*.jpg'
     if '--generate_tfrecords' in sys.argv:
         for file in glob.glob('*.tfrecords'):
             os.remove(file)
         generate_tfrecords(cat_dog_train_path)
     if '--clean' in sys.argv:
-        try:
-            shutil.rmtree('models/cat_dog_cnn_desktop/')
-        except:
-            print("Unable to remove directory - perhaps it does not exist?")
-        try:
-            shutil.rmtree('models/cat_dog_cnn_laptop/')
-        except:
-            print("Unable to remove directory - perhaps it does not exist?")
+        clean_model_dir()
 
+    validation_save_path = create_val_dir()
     # A good way to debug programs like this is to run a tf.InteractiveSession()
     # sess = tf.InteractiveSession()
     # next_example, next_label = imgs_input_fn(['train_0.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
@@ -80,11 +98,14 @@ def main(argv):
     training_op = optimizer.minimize(loss, name="training_op")
     val_acc = tf.Variable(4, name="val_acc")#, val_acc_op = tf.metrics.accuracy(labels=tf.argmax(input=label_val_batch, axis=1), predictions=val_pred, name="val_acc")
     sess.run(tf.global_variables_initializer())
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    # coord = tf.train.Coordinator()
+    # threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     for epoch in range(5):
         # # TRAINING
-        for step in range(2082):
+        acc_array = []
+        cost_array = []
+        start = time.time()
+        for step in range(500):
             X, Y = sess.run([image_batch, label_batch])
             cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
             # Adding this check here makes things MUCH slower (6s vs 19s)
@@ -110,17 +131,23 @@ def main(argv):
             X_val, Y_val = sess.run([image_val_batch, label_val_batch])
             # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets
             cost_val_value, y_val_pred = sess.run([loss, predictions], feed_dict={image_batch: X_val, label_batch: Y_val})
-            correct = tf.equal(tf.argmax(input=Y_val, axis=1), y_val_pred["classes"], name="correct")
-            # correct = sess.run(correct)
-            accuracy = sess.run(tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy"))
-            print("Val Step Complete, cost: {}, accuracy: {}".format(cost_val_value, accuracy))
-            # pdb.set_trace()
-        # pdb.set_trace()
-        
-        
+            x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
+            y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))
+            y_pred_val = y_val_pred['probabilities'] if y_pred_val is None else np.concatenate((y_pred_val, y_val_pred['probabilities']))
+            print("Val Step Complete, cost: {}, accuracy: {}".format(cost_val_value, 1), end="\r")
+        print()
+        print("Done - Time: {}".format(time.time() - start_ting))
+        ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
+        os.mkdir(ckpt_path)
+        np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
+        np.save(os.path.join(ckpt_path, "y_val.npy"), y_val)
+        np.save(os.path.join(ckpt_path, "y_pred_val.npy"), y_pred_val)
+        pdb.set_trace()
+        # print()
+        # print("Validation Complete, cost: {}, accuracy: {}".format(average(val_cost_array), average(val_acc_array)))
 
-    coord.request_stop()
-    coord.join(threads)
+    # coord.request_stop()
+    # coord.join(threads)
     print("Here")
     pdb.set_trace()
     # # Current (Working) Estimator Code ==========================================================================================================================
