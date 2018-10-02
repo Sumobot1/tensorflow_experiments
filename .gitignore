@@ -111,3 +111,12 @@ models/*
 
 # MNIST data directory
 MNIST-data/
+
+# Jupyter notebook extra files
+*.data-*
+*.index
+*.meta
+capsnet_example/checkpoint
+
+# Validation Results directory
+validation_results/
