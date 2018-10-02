@@ -74,14 +74,8 @@ def main(argv):
     print("TOTAL FILES: {}, NUM_ROTATIONS: {}, TOTAL TRAINING FILES: {}, TOTAL NUM STEPS {}".format(len(cat_dog_train_path), 1, total_training_files, total_num_steps))
     model_fn = fast_cnn_model_fn if machine_type == 'laptop' else cnn_model_fn
     
-    # New Code to Read Dtuff Inside of a Session ==========================================================================================================================
-    # Goals: 
-    # - Make two models - One for the Training Model, One for the Estimator
-    # - Allow Iterator to be initialized inside of a master session, instead of having to be reinitialized
-    # convert the tensor to numpy arrary
-    # Issue with queue runners being slow: https://github.com/tensorflow/tensorflow/issues/7817
+    # New Code to Read Stuff Inside of a Session ==========================================================================================================================
     # Tensorflow importing datasets: https://www.tensorflow.org/programmers_guide/datasets
-    # Tensorflow using queue runners for an actual model: http://ddokkddokk.tistory.com/12
     # Random shit on protobuf's queues: https://indico.io/tensorflow-data-inputs-part1-placeholders-protobufs-queues/
     tf.reset_default_graph()
     sess = tf.InteractiveSession()
@@ -96,33 +90,20 @@ def main(argv):
     loss, predictions = cnn_model_fn(image_batch, label_batch, mode=tf.estimator.ModeKeys.TRAIN, params={"return_estimator": False, "total_num_steps": total_num_steps})
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss, name="training_op")
-    val_acc = tf.Variable(4, name="val_acc")#, val_acc_op = tf.metrics.accuracy(labels=tf.argmax(input=label_val_batch, axis=1), predictions=val_pred, name="val_acc")
     sess.run(tf.global_variables_initializer())
-    # coord = tf.train.Coordinator()
-    # threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     for epoch in range(5):
-        # # TRAINING
-        acc_array = []
-        cost_array = []
+        # TRAINING
         start = time.time()
         for step in range(500):
             X, Y = sess.run([image_batch, label_batch])
             cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
-            # Adding this check here makes things MUCH slower (6s vs 19s)
+            # Note: Do NOT add accuracy calculation herre.  It makes training much slower! (6s vs 19s)
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
             # accuracy = sess.run(tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy"))
-            # acc_array.append(accuracy)
-            # cost_array.append(cost_value)
-            # sess.run(tf.Print(cost_value, [cost_value, accuracy], "hello: "))
-            # print("Step {} complete, cost: {}, accuracy: {}".format(step, cost_value, accuracy))
             print("Step {} complete, cost: {:0.5f}".format(step, cost_value), end="\r")
-            # print(predictions_value)
-        # print("Training Complete, cost: {}, accuracy: {}".format(average(cost_array), average(acc_array)))
-        # end = time.time()
         print()
         print("Time: {}".format(time.time() - start))
-        val_acc_array = []
-        val_cost_array = []
+        # VALIDATION
         x_val = None
         y_val = None
         y_pred_val = None
@@ -142,14 +123,8 @@ def main(argv):
         np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
         np.save(os.path.join(ckpt_path, "y_val.npy"), y_val)
         np.save(os.path.join(ckpt_path, "y_pred_val.npy"), y_pred_val)
-        pdb.set_trace()
-        # print()
-        # print("Validation Complete, cost: {}, accuracy: {}".format(average(val_cost_array), average(val_acc_array)))
+        print("File saved at checkpoint path {}".format(ckpt_path))
 
-    # coord.request_stop()
-    # coord.join(threads)
-    print("Here")
-    pdb.set_trace()
     # # Current (Working) Estimator Code ==========================================================================================================================
     # if not os.path.exists('models'):
     #     os.makedirs('models')
