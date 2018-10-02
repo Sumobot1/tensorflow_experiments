@@ -157,11 +157,14 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
     dataset = dataset.map(map_func=_parse_function, num_parallel_calls=NUM_CPU_CORES)
     if perform_shuffle:
         # Randomizes input using a window of 256 elements (read into memory)
-        dataset = dataset.shuffle(buffer_size=256)
+        dataset = dataset.shuffle(buffer_size=100)
     dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
     dataset = dataset.batch(batch_size)  # Batch size to use
     # How many elements (in this case batches) get consumed per epoch?
-    dataset = dataset.prefetch(buffer_size=2)
+    dataset = dataset.prefetch(buffer_size=300)
+    # My added shit
+    # iterator = dataset.make_initializable_iterator()
+    # Working code =============================
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
