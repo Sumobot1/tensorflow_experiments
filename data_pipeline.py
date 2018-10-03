@@ -85,6 +85,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
     # open the TFRecords file
     writer = tf.python_io.TFRecordWriter(filename)
     total_files = end_index - start_index
+    files_written = 0
     # TODO: Need to provide some sort of indicator of progress (% complete)
     for i in range(start_index, end_index):
         if (i % 100 == 0):
@@ -98,8 +99,10 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
             example = tf.train.Example(features=tf.train.Features(feature=feature))
             # Serialize to string and write on the file
             writer.write(example.SerializeToString())
+            files_written += 1
     writer.close()
     sys.stdout.flush()
+    np.save('{}_{}.npy'.format(data_type, thread_num), np.array([files_written]))
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -172,5 +175,7 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
 
 def get_tfrecords(name, base_dir=os.getcwd()):
     records = glob.glob(os.path.join(base_dir, '{}*.tfrecords'.format(name)))
+    numpy_records = glob.glob(os.path.join(base_dir, '{}*.npy'.format(name)))
     records.sort()
-    return records
+    numpy_records.sort()
+    return records, numpy_records
