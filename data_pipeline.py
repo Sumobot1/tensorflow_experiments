@@ -168,3 +168,9 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
+
+
+def get_tfrecords(name, base_dir=os.getcwd()):
+    records = glob.glob(os.path.join(base_dir, '{}*.tfrecords'.format(name)))
+    records.sort()
+    return records

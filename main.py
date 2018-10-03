@@ -9,14 +9,8 @@ import numpy as np
 import time
 
 from functools import reduce
-from data_pipeline import generate_tfrecords, imgs_input_fn
+from data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords
 from models import cnn_model_fn, fast_cnn_model_fn
-
-
-def get_tfrecords(name):
-    records = glob.glob('{}*.tfrecords'.format(name))
-    records.sort()
-    return records
 
 
 def average(list):
