@@ -18,6 +18,7 @@ import shutil
 import multiprocessing as mp
 from random import randint
 import imutils
+import time
 from PIL import Image, ImageFilter
 
 
@@ -178,4 +179,27 @@ def get_tfrecords(name, base_dir=os.getcwd()):
     numpy_records = glob.glob(os.path.join(base_dir, '{}*.npy'.format(name)))
     records.sort()
     numpy_records.sort()
-    return records, numpy_records
+    return records, [np.load(x)[0] for x in numpy_records]
+
+
+def create_val_dir():
+    validation_save_path = os.path.join(os.getcwd(), 'validation_results', time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
+    if not os.path.exists(validation_save_path):
+        os.makedirs(validation_save_path)
+    return validation_save_path
+
+
+def clean_model_dir():
+    try:
+        shutil.rmtree('models/cat_dog_cnn_desktop/')
+    except:
+        print("Unable to remove directory - perhaps it does not exist?")
+    try:
+        shutil.rmtree('models/cat_dog_cnn_laptop/')
+    except:
+        print("Unable to remove directory - perhaps it does not exist?")
+
+
+def clear_old_tfrecords():
+    for file in glob.glob('*.tfrecords'):
+        os.remove(file)
