@@ -120,3 +120,8 @@ capsnet_example/checkpoint
 
 # Validation Results directory
 validation_results/
+
+# Numpy files for number of records
+train*.npy
+val*.npy
+test*.npy
