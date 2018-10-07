@@ -32,23 +32,29 @@ def tf_model_estimator(logits, labels, predictions, mode, params):
 def cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     input_layer = tf.reshape(features, [-1, 80, 80, 3])
-    # Convolutional Layer #1
-    conv1 = tf.layers.conv2d(inputs=input_layer, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu)
-    # Pooling Layer #1
+    # Try separable conv2d
+    conv1 = tf.layers.conv2d(inputs=input_layer, filters=77, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-    # Convolutional Layer #2 and Pooling Layer #2
-    conv2 = tf.layers.conv2d(inputs=pool1, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
-    conv2 = tf.layers.conv2d(inputs=conv2, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
-    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
-    conv3 = tf.layers.conv2d(inputs=pool2, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
-    conv3 = tf.layers.conv2d(inputs=conv3, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
-    # Pooling Layer #1
+    norm1 = tf.layers.batch_normalization(inputs=pool1, axis=3)
+
+    conv2 = tf.layers.conv2d(inputs=norm1, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
+    norm2 = tf.layers.batch_normalization(inputs=conv2, axis=3)
+
+    conv3 = tf.layers.conv2d(inputs=norm2, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
     pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2)
-    # Dense Layer
-    pool2_flat = tf.layers.flatten(inputs=pool3)
-    dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.leaky_relu)
-    dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
-    # Logits Layer
+    norm3 = tf.layers.batch_normalization(inputs=pool3, axis=3)
+
+    conv4 = tf.layers.conv2d(inputs=norm3, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
+    norm4 = tf.layers.batch_normalization(inputs=conv4, axis=3)
+
+    conv5 = tf.layers.conv2d(inputs=norm4, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal())
+    pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2, 2], strides=2)
+    norm5 = tf.layers.batch_normalization(inputs=pool5, axis=3)
+
+    pool5_flat = tf.layers.flatten(inputs=norm5)
+    dense = tf.layers.dense(inputs=pool5_flat, units=42, activation=tf.nn.leaky_relu)
+    dropout = tf.layers.dropout(inputs=dense, rate=0.9, training=mode == tf.estimator.ModeKeys.TRAIN)
+
     logits = tf.layers.dense(inputs=dropout, units=2)
 
     predictions = {
