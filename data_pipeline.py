@@ -45,7 +45,7 @@ def load_image(addr, augment_data):
     images = []
     img = Image.open(addr).filter(ImageFilter.GaussianBlur(1)).resize((IMAGE_WIDTH, IMAGE_HEIGHT))
     array = img_to_array(img)
-    array_normalized = ((array - array.min()) * (1. / (array.max() - array.min()) * 1)).astype('float32')
+    array_normalized = ((array - array.min()) * (1. / 255.0 * 1)).astype('float32')
     images.append(array_normalized)
     if augment_data:
         array = array.reshape((1,) + array.shape)
@@ -125,16 +125,16 @@ def generate_tfrecords(cat_dog_train_path):
     # to the length of the shortest list
 
     # Divide the hata into 60% train, 20% validation, and 20% test
-    train_addrs = addrs[0:int(0.6 * len(addrs))]
-    train_labels = labels[0:int(0.6 * len(labels))]
-    val_addrs = addrs[int(0.6 * len(addrs)):int(0.8 * len(addrs))]
-    val_labels = labels[int(0.6 * len(addrs)):int(0.8 * len(addrs))]
-    test_addrs = addrs[int(0.8 * len(addrs)):]
-    test_labels = labels[int(0.8 * len(labels)):]
+    train_addrs = addrs[0:int(0.8 * len(addrs))]
+    train_labels = labels[0:int(0.8 * len(labels))]
+    val_addrs = addrs[int(0.8 * len(addrs)):int(0.95 * len(addrs))]
+    val_labels = labels[int(0.8 * len(addrs)):int(0.95 * len(addrs))]
+    test_addrs = addrs[int(0.95 * len(addrs)):]
+    test_labels = labels[int(0.95 * len(labels)):]
 
-    parallel_write_tfrecord_file(train_addrs, train_labels, 'train', max_records=10000)
-    parallel_write_tfrecord_file(val_addrs, val_labels, 'val', max_records=10000)
-    parallel_write_tfrecord_file(test_addrs, test_labels, 'test', max_records=10000)
+    parallel_write_tfrecord_file(train_addrs, train_labels, 'train')
+    parallel_write_tfrecord_file(val_addrs, val_labels, 'val')
+    parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/

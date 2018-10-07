@@ -5,14 +5,11 @@ from abstract_layers import input_layer, conv_2d, max_pool_2d, flatten, dense, d
 def tf_model_estimator(logits, labels, predictions, mode, params):
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
-
     # Note:
     # tf.losses.sparse_softmax_cross_entropy is depricated and will be removed soon
     # tf.nn.sparse_softmax_cross_entropy_with_logits works differently and returns a tensor instead of a differentiable value.
     # It needs to be wrapped in tf.reduce_mean to work properly
 
-    # loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-    # ting = tf.reduce_mean(loss, name='loss_layer')
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits), name='loss_layer')
     acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(input=labels, axis=1), predictions=predictions["classes"], name='accuracy_layer')
     batch_size = tf.shape(logits)[0]
@@ -20,8 +17,6 @@ def tf_model_estimator(logits, labels, predictions, mode, params):
     wack_hook = SuperWackHook(tensors_to_log, every_n_iter=50, total_num_steps=params['total_num_steps'])
     if params["return_estimator"] == False:
         print("here")
-        # optimizer = tf.train.AdamOptimizer()
-        # training_op = optimizer.minimize(loss, name="training_op")
         return (loss, predictions)#tf.metrics.accuracy(labels=tf.argmax(input=labels, axis=1), predictions=predictions["classes"])) if mode == tf.estimator.ModeKeys.EVAL else (loss, training_op)
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:

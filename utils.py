@@ -21,7 +21,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
             cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
-            # Note: Do NOT add accuracy calculation herre.  It makes training much slower! (6s vs 19s)
+            # Note: Do NOT add accuracy calculation here.  It makes training much slower! (6s vs 19s)
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
             # accuracy = sess.run(tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy"))
             print("Step {} complete, cost: {:0.5f}".format(step, cost_value), end="\r")
@@ -31,6 +31,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         x_val = None
         y_val = None
         y_pred_val = None
+        val_cost = 0
         start_ting = time.time()
         for step in range(num_val_steps):
             # DO i NEED TO SESS.RUN THIS EVERY STEP?  CAN i JUST DO IT OUTSIDE OF THE STEPS/EPOCHS?
@@ -40,9 +41,10 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
             x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
             y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))
             y_pred_val = y_val_pred['probabilities'] if y_pred_val is None else np.concatenate((y_pred_val, y_val_pred['probabilities']))
+            val_cost += cost_val_value
             print("Val Step Complete, cost: {:0.5f}".format(cost_val_value), end="\r")
         print()
-        print("Done - Time: {}".format(time.time() - start_ting))
+        print("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, val_cost / float(num_val_steps)))
         ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
         os.mkdir(ckpt_path)
         np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
