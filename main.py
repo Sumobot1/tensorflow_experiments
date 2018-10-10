@@ -58,14 +58,24 @@ def main(argv):
     label_batch = tf.placeholder_with_default(next_label, shape=[None, 2])
     image_val_batch = tf.placeholder_with_default(next_val_example, shape=[None, 80, 80, 3])
     label_val_batch = tf.placeholder_with_default(next_val_label, shape=[None, 2])
-    loss, predictions = model_fn(image_batch, label_batch, mode=tf.estimator.ModeKeys.TRAIN, params={"return_estimator": False, "total_num_steps": total_num_steps})
+    # Cannot change histogram summary and then reload model from the same checkpoint
+    loss, predictions = model_fn(image_batch, label_batch, mode=tf.estimator.ModeKeys.TRAIN, params={"return_estimator": False, "total_num_steps": total_num_steps, "histogram_summary": False, "loss_summary": True, "show_graph": True})
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss, name="training_op")
     print("done, {}".format(train_record_lengths))
     num_steps = get_num_steps(train_record_lengths, training_batch_size, DATA_REPETITIONS_PER_EPOCH)
     print("done, {}".format(val_record_lengths))
     num_val_steps = get_num_steps(val_record_lengths, VAL_BATCH_SIZE, 1)
-    train_model(sess, num_steps, NUM_EPOCHS, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path)
+    if not os.path.exists('tf_summaries/train'):
+        os.makedirs("tf_summaries/train")
+    if not os.path.exists('tf_summaries/val'):
+        os.makedirs("tf_summaries/val")
+    merged = tf.summary.merge_all()
+
+    train_writer = tf.summary.FileWriter('tf_summaries/train', sess.graph)
+    test_writer = tf.summary.FileWriter('tf_summaries/val')
+
+    train_model(sess, num_steps, NUM_EPOCHS, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir)
 
 
 if __name__ == "__main__":

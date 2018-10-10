@@ -3,6 +3,7 @@ import tensorflow as tf
 import time
 import numpy as np
 import os
+import sys
 
 
 def average(list):
@@ -21,36 +22,52 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
             cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
+            if epoch >= epochs_before_summary:
+                summary = sess.run([merged])
+                train_writer.add_summary(summary[0], counter)
+            counter += 1
             # Note: Do NOT add accuracy calculation here.  It makes training much slower! (6s vs 19s)
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
             # accuracy = sess.run(tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy"))
             print("Step {} complete, cost: {:0.5f}".format(step, cost_value), end="\r")
         print()
         print("Time: {} - {} seconds per step".format(time.time() - start, float(time.time() - start) / float(num_steps)))
-        # VALIDATION
-        x_val = None
-        y_val = None
-        y_pred_val = None
-        val_cost = 0
-        start_ting = time.time()
-        for step in range(num_val_steps):
-            # DO i NEED TO SESS.RUN THIS EVERY STEP?  CAN i JUST DO IT OUTSIDE OF THE STEPS/EPOCHS?
-            X_val, Y_val = sess.run([image_val_batch, label_val_batch])
-            # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets
-            cost_val_value, y_val_pred = sess.run([loss, predictions], feed_dict={image_batch: X_val, label_batch: Y_val})
-            x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
-            y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))
-            y_pred_val = y_val_pred['probabilities'] if y_pred_val is None else np.concatenate((y_pred_val, y_val_pred['probabilities']))
-            val_cost += cost_val_value
-            print("Val Step Complete, cost: {:0.5f}".format(cost_val_value), end="\r")
-        print()
-        print("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, val_cost / float(num_val_steps)))
-        ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
-        os.mkdir(ckpt_path)
-        np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
-        np.save(os.path.join(ckpt_path, "y_val.npy"), y_val)
-        np.save(os.path.join(ckpt_path, "y_pred_val.npy"), y_pred_val)
-        print("File saved at checkpoint path {}".format(ckpt_path))
+        if epoch >= epochs_before_validation:
+            # VALIDATION
+            x_val = None
+            y_val = None
+            y_pred_val = None
+            val_cost = 0
+            start_ting = time.time()
+            for step in range(num_val_steps):
+                X_val, Y_val = sess.run([image_val_batch, label_val_batch])
+                # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets
+                # https://www.tensorflow.org/performance/performance_guide#general_best_practices
+                # ^ Feed dict is not much slower than the tf.data api for a single gpu
+                cost_val_value, y_val_pred = sess.run([loss, predictions], feed_dict={image_batch: X_val, label_batch: Y_val})
+                if epoch >= epochs_before_summary:
+                    summary2 = sess.run([merged])
+                    train_writer.add_summary(summary2[0], epoch)
+                counter += 1
+                x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
+                y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))
+                y_pred_val = y_val_pred['probabilities'] if y_pred_val is None else np.concatenate((y_pred_val, y_val_pred['probabilities']))
+                val_cost += cost_val_value
+                print("Val Step Complete, cost: {:0.5f}".format(cost_val_value), end="\r")
+            print()
+            avg_val_cost = val_cost / float(num_val_steps)
+            print("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, avg_val_cost))
+            print("min(val cost ting): {}, avg cost: {}".format(min(avg_validation_costs[-3:]), avg_val_cost))
+            if min(avg_validation_costs[-3:]) > avg_val_cost:
+                save_path = saver.save(sess, "models/{}/model_{}".format(model_dir, epoch))
+                print("Saved validation at {}".format(save_path))
+                avg_validation_costs.append(avg_val_cost)
+            ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
+            os.mkdir(ckpt_path)
+            np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
+            np.save(os.path.join(ckpt_path, "y_val.npy"), y_val)
+            np.save(os.path.join(ckpt_path, "y_pred_val.npy"), y_pred_val)
+            print("File saved at checkpoint path {}".format(ckpt_path))
 
     # # Current (Working) Estimator Code ==========================================================================================================================
     # if not os.path.exists('models'):
