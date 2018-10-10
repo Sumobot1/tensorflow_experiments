@@ -125,3 +125,6 @@ validation_results/
 train*.npy
 val*.npy
 test*.npy
+
+# TFEvents
+*.tfevents*
