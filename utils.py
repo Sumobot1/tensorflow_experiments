@@ -14,9 +14,22 @@ def get_num_steps(records_array, batch_size, repititions_per_epoch=1):
     return int(sum(records_array) * repititions_per_epoch / batch_size)
 
 
-def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path):
-    sess.run(tf.global_variables_initializer())
-    for epoch in range(num_epochs):
+def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation=0, epochs_before_summary=0):
+    saver = tf.train.Saver()
+    restore_checkpoint = True
+    starting_epoch = 0
+    if restore_checkpoint and tf.train.checkpoint_exists(ckpt_path):
+        print("restoring checkpoint {}".format(ckpt_path))
+        saver.restore(sess, ckpt_path)
+        starting_epoch = int(ckpt_path.split('_')[-1])
+    else:
+        sess.run(tf.global_variables_initializer())
+    counter = 0
+    avg_validation_costs = [sys.maxsize, sys.maxsize, sys.maxsize]
+    # Do not start doing histogram stuff until certain epoch number??
+    # Would need to save/load model on certain epochs
+    # Also wanna use cprint
+    for epoch in range(starting_epoch, num_epochs):
         # TRAINING
         start = time.time()
         for step in range(num_steps):

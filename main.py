@@ -34,6 +34,8 @@ def main(argv):
         clean_model_dir()
 
     validation_save_path = create_val_dir()
+    model_dir = 'cat_dog_cnn_laptop' if machine_type == 'laptop' else 'cat_dog_cnn_desktop'
+    ckpt_path = 'models/{}/{}'.format(model_dir, argv[-1]) if machine_type == 'laptop' else 'models/{}/{}'.format(model_dir, argv[-1])
     # A good way to debug programs like this is to run a tf.InteractiveSession()
     # sess = tf.InteractiveSession()
     # next_example, next_label = imgs_input_fn(['train_0.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
@@ -47,7 +49,6 @@ def main(argv):
     total_num_steps = int(total_training_files / training_batch_size)
     print("TOTAL FILES: {}, NUM_ROTATIONS: {}, TOTAL TRAINING FILES: {}, TOTAL NUM STEPS {}".format(len(cat_dog_train_path), 1, total_training_files, total_num_steps))
     model_fn = fast_cnn_model_fn if machine_type == 'laptop' else cnn_model_fn
-    # New Code to Read Stuff Inside of a Session ==========================================================================================================================
     # Tensorflow importing datasets: https://www.tensorflow.org/programmers_guide/datasets
     # Random shit on protobuf's queues: https://indico.io/tensorflow-data-inputs-part1-placeholders-protobufs-queues/
     tf.reset_default_graph()
