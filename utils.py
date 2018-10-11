@@ -4,6 +4,7 @@ import time
 import numpy as np
 import os
 import sys
+from termcolor import cprint
 
 
 def average(list):
@@ -14,9 +15,9 @@ def get_num_steps(records_array, batch_size, repititions_per_epoch=1):
     return int(sum(records_array) * repititions_per_epoch / batch_size)
 
 
-def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation=0, epochs_before_summary=0):
+def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):
     saver = tf.train.Saver()
-    restore_checkpoint = True
+    restore_checkpoint = False
     starting_epoch = 0
     if restore_checkpoint and tf.train.checkpoint_exists(ckpt_path):
         print("restoring checkpoint {}".format(ckpt_path))
@@ -32,6 +33,8 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
     for epoch in range(starting_epoch, num_epochs):
         # TRAINING
         start = time.time()
+        print("training")
+        print()
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
             cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
@@ -46,6 +49,8 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         print()
         print("Time: {} - {} seconds per step".format(time.time() - start, float(time.time() - start) / float(num_steps)))
         if epoch >= epochs_before_validation:
+            print("validation")
+            print()
             # VALIDATION
             x_val = None
             y_val = None
@@ -69,7 +74,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
                 print("Val Step Complete, cost: {:0.5f}".format(cost_val_value), end="\r")
             print()
             avg_val_cost = val_cost / float(num_val_steps)
-            print("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, avg_val_cost))
+            cprint("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, avg_val_cost), "green")
             print("min(val cost ting): {}, avg cost: {}".format(min(avg_validation_costs[-3:]), avg_val_cost))
             if min(avg_validation_costs[-3:]) > avg_val_cost:
                 save_path = saver.save(sess, "models/{}/model_{}".format(model_dir, epoch))

@@ -107,7 +107,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
-def generate_tfrecords(cat_dog_train_path):
+def generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac):
     # read addresses and labels from the 'train' folder
     addrs = glob.glob(cat_dog_train_path)
     labels = [[0, 1] if 'cat' in addr.split('/')[-1] else [1, 0] for addr in addrs]  # 0 = Cat, 1 = Dog
@@ -125,12 +125,12 @@ def generate_tfrecords(cat_dog_train_path):
     # to the length of the shortest list
 
     # Divide the hata into 60% train, 20% validation, and 20% test
-    train_addrs = addrs[0:int(0.8 * len(addrs))]
-    train_labels = labels[0:int(0.8 * len(labels))]
-    val_addrs = addrs[int(0.8 * len(addrs)):int(0.95 * len(addrs))]
-    val_labels = labels[int(0.8 * len(addrs)):int(0.95 * len(addrs))]
-    test_addrs = addrs[int(0.95 * len(addrs)):]
-    test_labels = labels[int(0.95 * len(labels)):]
+    train_addrs = addrs[0:int(train_frac * len(addrs))]
+    train_labels = labels[0:int(train_frac * len(labels))]
+    val_addrs = addrs[int(train_frac * len(addrs)):int((train_frac + val_frac) * len(addrs))]
+    val_labels = labels[int(train_frac * len(addrs)):int((train_frac + val_frac) * len(addrs))]
+    test_addrs = addrs[int((train_frac + val_frac) * len(addrs)):]
+    test_labels = labels[int((train_frac + val_frac) * len(labels)):]
 
     parallel_write_tfrecord_file(train_addrs, train_labels, 'train')
     parallel_write_tfrecord_file(val_addrs, val_labels, 'val')
