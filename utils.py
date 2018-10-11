@@ -15,11 +15,22 @@ def get_num_steps(records_array, batch_size, repititions_per_epoch=1):
     return int(sum(records_array) * repititions_per_epoch / batch_size)
 
 
+def train_model_step(sess, session_vars, session_dict, epoch, epochs_before_summary, summary_writer, global_step, session_type):
+    cost_value = None
+    predictions_value = None
+    session_vals = sess.run(session_vars, feed_dict=session_dict)
+    if epoch >= epochs_before_summary:
+        summary, cost_value, predictions_value = session_vals[0], session_vals[1], session_vals[2]
+        summary_writer.add_summary(summary, global_step)
+    else:
+        cost_value, predictions_value = session_vals[0], session_vals[1]
+    return cost_value, predictions_value
+
+
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):
     saver = tf.train.Saver()
-    restore_checkpoint = False
     starting_epoch = 0
-    if restore_checkpoint and tf.train.checkpoint_exists(ckpt_path):
+    if ckpt_path is not None and tf.train.checkpoint_exists(ckpt_path):
         print("restoring checkpoint {}".format(ckpt_path))
         saver.restore(sess, ckpt_path)
         starting_epoch = int(ckpt_path.split('_')[-1])
@@ -33,14 +44,10 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
     for epoch in range(starting_epoch, num_epochs):
         # TRAINING
         start = time.time()
-        print("training")
-        print()
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
-            cost_value, predictions_value, _ = sess.run([loss, predictions, training_op], feed_dict={image_batch: X, label_batch: Y})
-            if epoch >= epochs_before_summary:
-                summary = sess.run([merged])
-                train_writer.add_summary(summary[0], counter)
+            session_vars = [merged, loss, predictions, training_op] if epoch >= epochs_before_summary else [loss, predictions, training_op]
+            cost_value, predictions_value = train_model_step(sess, session_vars, {image_batch: X, label_batch: Y}, epoch, epochs_before_summary, train_writer, counter, "train")
             counter += 1
             # Note: Do NOT add accuracy calculation here.  It makes training much slower! (6s vs 19s)
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
@@ -49,8 +56,6 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         print()
         print("Time: {} - {} seconds per step".format(time.time() - start, float(time.time() - start) / float(num_steps)))
         if epoch >= epochs_before_validation:
-            print("validation")
-            print()
             # VALIDATION
             x_val = None
             y_val = None
@@ -62,10 +67,8 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
                 # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets
                 # https://www.tensorflow.org/performance/performance_guide#general_best_practices
                 # ^ Feed dict is not much slower than the tf.data api for a single gpu
-                cost_val_value, y_val_pred = sess.run([loss, predictions], feed_dict={image_batch: X_val, label_batch: Y_val})
-                if epoch >= epochs_before_summary:
-                    summary2 = sess.run([merged])
-                    train_writer.add_summary(summary2[0], epoch)
+                session_vars = [merged, loss, predictions] if epoch >= epochs_before_summary else [loss, predictions]
+                cost_val_value, y_val_pred = train_model_step(sess, session_vars, {image_batch: X_val, label_batch: Y_val}, epoch, epochs_before_summary, test_writer, counter, "test")
                 counter += 1
                 x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
                 y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))
