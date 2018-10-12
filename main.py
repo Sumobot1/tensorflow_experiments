@@ -19,7 +19,7 @@ DATA_REPETITIONS_PER_EPOCH = 1
 VAL_BATCH_SIZE = 300
 
 
-def main(clean_model_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, summary_start_epoch, train_val_test_split, model_file):
+def main(clean_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, summary_start_epoch, train_val_test_split, model_file):
     if len(train_val_test_split) != 3 or sum(train_val_test_split) != 1:
         print("ERROR - Train + Val + Test should equal 1")
         return
@@ -42,7 +42,7 @@ def main(clean_model_dir, generate_tfrecords, is_laptop, num_epochs, val_start_e
     if generate_tfrecords:
         clear_old_tfrecords()
         generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac)
-    if clean_model_dir:
+    if clean_dir:
         clean_model_dir()
 
     # A good way to debug programs like this is to run a tf.InteractiveSession()

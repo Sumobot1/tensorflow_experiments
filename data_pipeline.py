@@ -198,6 +198,10 @@ def clean_model_dir():
         shutil.rmtree('models/cat_dog_cnn_laptop/')
     except:
         print("Unable to remove directory - perhaps it does not exist?")
+    try:
+        shutil.rmtree('tf_summaries/')
+    except:
+        print("Unable to remove tf_summaries directory")
 
 
 def clear_old_tfrecords():
