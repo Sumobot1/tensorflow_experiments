@@ -107,8 +107,8 @@ venv.bak/
 *.tfrecords
 
 # models directory
-models/*
-
+*/models/*
+*/models/cat_dog_cnn_desktop/checkpoint
 # MNIST data directory
 MNIST-data/
 
