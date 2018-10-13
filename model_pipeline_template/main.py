@@ -9,9 +9,9 @@ import numpy as np
 import time
 
 from functools import reduce
-from data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir
-from models import cnn_model_fn, fast_cnn_model_fn
-from utils import average, get_num_steps, train_model
+from model_pipeline_utils.data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir
+from model_pipeline_utils.models import cnn_model_fn, fast_cnn_model_fn
+from model_pipeline_utils.utils import average, get_num_steps, train_model
 import argparse
 
 NUM_EPOCHS = 80

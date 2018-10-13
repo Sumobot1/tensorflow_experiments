@@ -28,15 +28,16 @@ def train_model_step(sess, session_vars, session_dict, epoch, epochs_before_summ
 
 
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):
-    saver = tf.train.Saver()
-    starting_epoch = 0
+    saver = tf.train.Saver(max_to_keep=num_epochs)
+    starting_epoch, counter = 0, 0
+    # Note - the model checkpoints only have the weights - the model still needs to be declared
     if ckpt_path is not None and tf.train.checkpoint_exists(ckpt_path):
         print("restoring checkpoint {}".format(ckpt_path))
         saver.restore(sess, ckpt_path)
         starting_epoch = int(ckpt_path.split('_')[-1])
     else:
         sess.run(tf.global_variables_initializer())
-    counter = 0
+    # counter = 0
     avg_validation_costs = [sys.maxsize, sys.maxsize, sys.maxsize]
     # Do not start doing histogram stuff until certain epoch number??
     # Would need to save/load model on certain epochs

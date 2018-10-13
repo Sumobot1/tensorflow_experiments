@@ -1,6 +1,6 @@
 import tensorflow as tf
-from estimator_hooks import SuperWackHook
-from abstract_layers import input_layer, conv_2d, max_pool_2d, flatten, dense, dropout
+from model_pipeline_utils.estimator_hooks import SuperWackHook
+from model_pipeline_utils.abstract_layers import input_layer, conv_2d, max_pool_2d, flatten, dense, dropout
 
 
 def tf_model_estimator(logits, labels, predictions, mode, params):
