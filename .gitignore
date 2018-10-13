@@ -116,7 +116,7 @@ MNIST-data/
 *.data-*
 *.index
 *.meta
-capsnet_example/checkpoint
+*/checkpoint
 
 # Validation Results directory
 validation_results/
