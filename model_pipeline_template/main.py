@@ -19,7 +19,7 @@ DATA_REPETITIONS_PER_EPOCH = 1
 VAL_BATCH_SIZE = 300
 
 
-def main(clean_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, summary_start_epoch, train_val_test_split, model_file):
+def main(clean_dir, gen_records, is_laptop, num_epochs, val_start_epoch, summary_start_epoch, train_val_test_split, model_file):
     if len(train_val_test_split) != 3 or sum(train_val_test_split) != 1:
         print("ERROR - Train + Val + Test should equal 1")
         return
@@ -39,7 +39,7 @@ def main(clean_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, 
     if model_file:
         ckpt_path = 'models/{}/{}'.format(model_dir, model_file) if is_laptop else 'models/{}/{}'.format(model_dir, model_file)
 
-    if generate_tfrecords:
+    if gen_records:
         clear_old_tfrecords()
         generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac)
     if clean_dir:
@@ -63,6 +63,7 @@ def main(clean_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, 
     # repeat_count=-1 repeats the dataset indefinitely
     next_example, next_label = imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=-1, batch_size=training_batch_size)
     next_val_example, next_val_label = imgs_input_fn(val_records, 'val', perform_shuffle=False, repeat_count=-1, batch_size=VAL_BATCH_SIZE)
+    # Prob going to want to read things like input sizes from a config file (keep things consistent between preparing data, and training the network)
     image_batch = tf.placeholder_with_default(next_example, shape=[None, 80, 80, 3])
     label_batch = tf.placeholder_with_default(next_label, shape=[None, 2])
     image_val_batch = tf.placeholder_with_default(next_val_example, shape=[None, 80, 80, 3])
@@ -81,7 +82,7 @@ def main(clean_dir, generate_tfrecords, is_laptop, num_epochs, val_start_epoch, 
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('tf_summaries/train', sess.graph)
     test_writer = tf.summary.FileWriter('tf_summaries/val')
-
+    print("num_steps: {}".format(num_val_steps))
     train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, val_start_epoch, summary_start_epoch)
 
 

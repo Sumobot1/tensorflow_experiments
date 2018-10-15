@@ -1,4 +1,5 @@
 from random import shuffle
+import json
 import glob
 import pdb
 import cv2
@@ -82,7 +83,7 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsi
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
 def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_type):
-    filename = '{}_{}.tfrecords'.format(data_type, thread_num)
+    filename = 'train_val_test_datasets/{}_{}.tfrecords'.format(data_type, thread_num)
     # open the TFRecords file
     writer = tf.python_io.TFRecordWriter(filename)
     total_files = end_index - start_index
@@ -103,7 +104,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
             files_written += 1
     writer.close()
     sys.stdout.flush()
-    np.save('{}_{}.npy'.format(data_type, thread_num), np.array([files_written]))
+    np.save('train_val_test_datasets/{}_{}.npy'.format(data_type, thread_num), np.array([files_written]))
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -135,6 +136,18 @@ def generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac):
     parallel_write_tfrecord_file(train_addrs, train_labels, 'train')
     parallel_write_tfrecord_file(val_addrs, val_labels, 'val')
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
+
+
+def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, test_frac, json_to_tensors_fn):
+    image_files = glob.glob(os.path.join(data_dir, "*.jpg"))
+    image_files.sort()
+    image_labels = glob.glob(os.path.join(data_dir, "*.json"))
+    image_labels.sort()
+    image_label_tensors = []
+    for label in image_labels:
+        with open(label, 'r') as f:
+            distros_dict = json_to_tensors_fn(json.load(f))
+            pdb.set_trace()
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -175,8 +188,8 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, b
 
 
 def get_tfrecords(name, base_dir=os.getcwd()):
-    records = glob.glob(os.path.join(base_dir, '{}*.tfrecords'.format(name)))
-    numpy_records = glob.glob(os.path.join(base_dir, '{}*.npy'.format(name)))
+    records = glob.glob(os.path.join(base_dir, 'train_val_test_datasets/{}*.tfrecords'.format(name)))
+    numpy_records = glob.glob(os.path.join(base_dir, 'train_val_test_datasets/{}*.npy'.format(name)))
     records.sort()
     numpy_records.sort()
     return records, [np.load(x)[0] for x in numpy_records]
@@ -205,5 +218,20 @@ def clean_model_dir():
 
 
 def clear_old_tfrecords():
-    for file in glob.glob('*.tfrecords'):
+    os.makedirs('train_val_test_datasets', exist_ok=True)
+    for file in glob.glob('train_val_test_datasets/*.tfrecords'):
         os.remove(file)
+
+
+# Function to turn file names into JSON files for dog and cat dataset
+def make_json_from_file_names(data_dir):
+    image_files = glob.glob(os.path.join(data_dir, "*.jpg"))
+    image_files.sort()
+    labels = [[0, 1] if 'cat' in file.split('/')[-1] else [1, 0] for file in image_files]  # 0 = Cat, 1 = Dog
+    for ting in zip(labels, image_files):
+        original_file_name = ting[1].split('/')[-1]
+        new_file_name = ting[1].split('/')[-1].replace("jpg", "json")
+        new_file_path = ting[1].replace(original_file_name, new_file_name)
+        data = {"label": ting[0]}
+        with open(new_file_path, 'w') as outfile:
+            json.dump(data, outfile)
