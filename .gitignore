@@ -128,3 +128,6 @@ test*.npy
 
 # TFEvents
 *.tfevents*
+
+# Tfrecord config
+*/tfrecord_config.json
