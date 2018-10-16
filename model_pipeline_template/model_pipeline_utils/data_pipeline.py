@@ -138,7 +138,7 @@ def generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac):
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
 
 
-def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, test_frac, json_to_tensors_fn):
+def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, test_frac, json_to_tensors_fn, class_balancing_fn):
     image_files = glob.glob(os.path.join(data_dir, "*.jpg"))
     image_files.sort()
     image_labels = glob.glob(os.path.join(data_dir, "*.json"))
@@ -146,8 +146,26 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
     image_label_tensors = []
     for label in image_labels:
         with open(label, 'r') as f:
-            distros_dict = json_to_tensors_fn(json.load(f))
-            pdb.set_trace()
+            image_label_tensors.append(json_to_tensors_fn(json.load(f)))
+
+    # Shuffle the dataset, then put it into an alternating list to ensure equal class representation
+    dataset = list(zip(image_files, image_label_tensors))
+    shuffle(dataset)
+    balanced_images, balanced_label_tensors = class_balancing_fn(dataset)
+
+    train_addrs = balanced_images[0:int(train_frac * len(balanced_images))]
+    train_labels = balanced_label_tensors[0:int(train_frac * len(balanced_label_tensors))]
+    val_addrs = balanced_images[int(train_frac * len(balanced_images)):int((train_frac + val_frac) * len(balanced_images))]
+    val_labels = balanced_label_tensors[int(train_frac * len(balanced_images)):int((train_frac + val_frac) * len(balanced_images))]
+    test_addrs = balanced_images[int((train_frac + val_frac) * len(balanced_images)):]
+    test_labels = balanced_label_tensors[int((train_frac + val_frac) * len(balanced_label_tensors)):]
+
+    parallel_write_tfrecord_file(train_addrs, train_labels, 'train')
+    parallel_write_tfrecord_file(val_addrs, val_labels, 'val')
+    parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
+
+    with open("tfrecord_config.json", 'w') as outfile:
+            json.dump({"image_dims": image_dims, "data_split": [train_frac, val_frac, test_frac]}, outfile)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
