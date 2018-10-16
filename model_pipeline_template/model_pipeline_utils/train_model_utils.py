@@ -1,3 +1,4 @@
+import json
 from functools import reduce
 import tensorflow as tf
 import time
@@ -5,6 +6,7 @@ import numpy as np
 import os
 import sys
 from termcolor import cprint
+from model_pipeline_utils.models import fast_cnn_model_fn, cnn_model_fn
 
 
 def average(list):
@@ -13,6 +15,12 @@ def average(list):
 
 def get_num_steps(records_array, batch_size, repititions_per_epoch=1):
     return int(sum(records_array) * repititions_per_epoch / batch_size)
+
+
+def get_appropriate_model(model_name):
+    model_dict = {"fast_cnn_model_fn": fast_cnn_model_fn,
+                  "cnn_model_fn": cnn_model_fn}
+    return model_dict[model_name]
 
 
 def train_model_step(sess, session_vars, session_dict, epoch, epochs_before_summary, summary_writer, global_step, session_type):
@@ -25,6 +33,15 @@ def train_model_step(sess, session_vars, session_dict, epoch, epochs_before_summ
     else:
         cost_value, predictions_value = session_vals[0], session_vals[1]
     return cost_value, predictions_value
+
+
+def read_model_config(config_file):
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+        input_dims = [None] + config['input_dims']
+        output_dims = [None] + config['output_dims']
+        train_frac, val_frac, test_frac = config['data_split']
+        return train_frac, val_frac, test_frac, input_dims, output_dims
 
 
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):

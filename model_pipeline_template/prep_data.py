@@ -6,6 +6,9 @@ from model_pipeline_utils.class_balancing_functions import cat_dog_class_balance
 
 def main(train_val_test_split, data_dir, data_format, dict_tensor_string, image_dims):
     train_frac, val_frac, test_frac = train_val_test_split
+    if sum(train_val_test_split) != 1:
+        print("ERROR - Train + Val + Test should equal 1")
+        return
     dict_tensor_fn, class_balancing_fn = None, None
     if dict_tensor_string == "cat_dog_dict_tensor":
         dict_tensor_fn = cat_dog_dict_tensor

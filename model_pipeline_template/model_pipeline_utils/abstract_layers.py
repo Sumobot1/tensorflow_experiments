@@ -10,10 +10,12 @@ kernel_initializers = {
     'he_normal': tf.keras.initializers.he_normal()
 }
 
+
 # input_layer: Layer to be inputted
 # output_shape: Array representing shape to output (ex. [-1, 80, 80, 3])
 def input_layer(input_layer, output_shape):
     return tf.reshape(input_layer, output_shape)
+
 
 # filter_size: number - how many nodes in convolution (32 - 32x32 convolution)
 # kernel_size: array - dimensions of kernel (ex. [3, 3])

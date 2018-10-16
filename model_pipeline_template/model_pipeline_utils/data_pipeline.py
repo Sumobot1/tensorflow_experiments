@@ -165,11 +165,11 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
 
     with open("tfrecord_config.json", 'w') as outfile:
-            json.dump({"image_dims": image_dims, "data_split": [train_frac, val_frac, test_frac]}, outfile)
+            json.dump({"input_dims": image_dims, "output_dims": [len(image_label_tensors[0])], "data_split": [train_frac, val_frac, test_frac]}, outfile)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
-def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=1, batch_size=1):
+def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=-1, batch_size=1):
     def _parse_function(serialized):
         features = {'{}/label'.format(data_type): tf.FixedLenFeature([], tf.string),
                     '{}/image'.format(data_type): tf.FixedLenFeature([], tf.string)}
