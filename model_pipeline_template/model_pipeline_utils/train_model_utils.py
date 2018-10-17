@@ -44,6 +44,10 @@ def read_model_config(config_file):
         return train_frac, val_frac, test_frac, input_dims, output_dims
 
 
+def get_io_placeholders(next_example, next_label, input_dims, output_dims):
+    return tf.placeholder_with_default(next_example, shape=input_dims), tf.placeholder_with_default(next_label, shape=output_dims)
+
+
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):
     print("in train model")
     saver = tf.train.Saver(max_to_keep=num_epochs)

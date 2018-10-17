@@ -31,6 +31,6 @@ if __name__ == "__main__":
     parser.add_argument('--dict-tensor-fn', type=str, help="Name of function to turn dicts from JSON files into the required output tensor of the network.")
     parser.add_argument('--image-dims', type=str, help="Image dimensions - should be in the form <HEIGHT>,<WIDTH>,<NUM_CHANNELS>")
     args = parser.parse_args()
-    main([float(item) for item in args.train_val_test_split.split(',')], args.data_dir, args.data_format, args.dict_tensor_fn, [float(item) for item in args.image_dims.split(',')])
+    main([float(item) for item in args.train_val_test_split.split(',')], args.data_dir, args.data_format, args.dict_tensor_fn, [int(item) for item in args.image_dims.split(',')])
 
 # Example Usage: python3 prep_data.py --train-val-test-split 0.8,0.15,0.05 --data-dir '/home/michael/hard_drive/datasets/dogs_vs_cats_data/train/' --data-format image --dict-tensor-fn cat_dog_dict_tensor --image-dims 80,80,3

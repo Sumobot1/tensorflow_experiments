@@ -12,10 +12,9 @@ import json
 from functools import reduce
 from model_pipeline_utils.data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir
 from model_pipeline_utils.models import cnn_model_fn, fast_cnn_model_fn
-from model_pipeline_utils.train_model_utils import average, get_num_steps, train_model, get_appropriate_model, read_model_config
+from model_pipeline_utils.train_model_utils import average, get_num_steps, train_model, get_appropriate_model, read_model_config, get_io_placeholders
 import argparse
 
-NUM_EPOCHS = 80
 DATA_REPETITIONS_PER_EPOCH = 1
 VAL_BATCH_SIZE = 300
 
@@ -45,18 +44,16 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     val_records, val_record_lengths = get_tfrecords('val')
     total_training_files = sum(train_record_lengths)
     total_num_steps = int(total_training_files / train_batch_size)
-    print("NUM_ROTATIONS: {}, TOTAL TRAINING FILES: {}, TOTAL NUM STEPS {}".format(1, total_training_files, total_num_steps))
     model_fn = get_appropriate_model(model_name)
 
     tf.reset_default_graph()
     sess = tf.InteractiveSession()
-    next_example, next_label = imgs_input_fn(train_records, 'train', perform_shuffle=True, repeat_count=-1, batch_size=train_batch_size)
-    next_val_example, next_val_label = imgs_input_fn(val_records, 'val', perform_shuffle=False, repeat_count=-1, batch_size=VAL_BATCH_SIZE)
-    image_batch = tf.placeholder_with_default(next_example, shape=input_dims)
-    label_batch = tf.placeholder_with_default(next_label, shape=output_dims)
-    image_val_batch = tf.placeholder_with_default(next_val_example, shape=input_dims)
-    label_val_batch = tf.placeholder_with_default(next_val_label, shape=output_dims)
+    next_example, next_label = imgs_input_fn(train_records, 'train', input_dims, output_dims, perform_shuffle=True, repeat_count=-1, batch_size=train_batch_size)
+    next_val_example, next_val_label = imgs_input_fn(val_records, 'val', input_dims, output_dims, perform_shuffle=False, repeat_count=-1, batch_size=VAL_BATCH_SIZE)
+    image_batch, label_batch = get_io_placeholders(next_example, next_label, input_dims, output_dims)
+    image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims)
     # Cannot change histogram summary and then reload model from the same checkpoint
+    # TODO: Get rid of unneeded params
     loss, predictions = model_fn(image_batch, label_batch, mode=tf.estimator.ModeKeys.TRAIN, params={"return_estimator": False, "total_num_steps": total_num_steps, "histogram_summary": False, "loss_summary": True, "show_graph": True})
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss, name="training_op")
@@ -88,4 +85,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args.clean, args.num_epochs, args.start_val_at, args.start_summary_at, args.train_batch_size, args.config_file, args.model_dir, args.model_name, args.model_file)
 
-# Example Usage: 
+# Example Usage: python3 train_model.py --clean --num-epochs 5 --start-summary-at 5 --train-batch-size 110 --model-dir cat_dog_cnn_desktop --model-name cnn_model_fn

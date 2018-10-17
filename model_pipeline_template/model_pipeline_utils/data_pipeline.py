@@ -169,7 +169,7 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
-def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=-1, batch_size=1):
+def imgs_input_fn(filenames, data_type, input_dims, output_dims, perform_shuffle=False, repeat_count=-1, batch_size=1):
     def _parse_function(serialized):
         features = {'{}/label'.format(data_type): tf.FixedLenFeature([], tf.string),
                     '{}/image'.format(data_type): tf.FixedLenFeature([], tf.string)}
@@ -179,9 +179,9 @@ def imgs_input_fn(filenames, data_type, perform_shuffle=False, repeat_count=-1, 
         image_raw = parsed_example['{}/image'.format(data_type)]
         label = tf.decode_raw(parsed_example['{}/label'.format(data_type)], tf.int64)
         label = tf.cast(label, tf.float32)
-        label = tf.reshape(label, [2])
+        label = tf.reshape(label, output_dims[1:])
         # Decode the raw bytes so it becomes a tensor with type.
-        img = tf.reshape(tf.decode_raw(image_raw, tf.float32), [IMAGE_HEIGHT, IMAGE_WIDTH, 3])
+        img = tf.reshape(tf.decode_raw(image_raw, tf.float32), input_dims[1:])
         # Don't know if we need to center the image in this case...
         # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
         return img, label
