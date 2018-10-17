@@ -54,7 +54,7 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims)
     # Cannot change histogram summary and then reload model from the same checkpoint
     # TODO: Get rid of unneeded params
-    loss, predictions = model_fn(image_batch, label_batch, mode=tf.estimator.ModeKeys.TRAIN, params={"return_estimator": False, "total_num_steps": total_num_steps, "histogram_summary": False, "loss_summary": True, "show_graph": True})
+    loss, predictions = model_fn(image_batch, label_batch, mode="train", params={"return_estimator": False, "histogram_summary": False, "loss_summary": True})
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss, name="training_op")
     num_steps = get_num_steps(train_record_lengths, train_batch_size, DATA_REPETITIONS_PER_EPOCH)
