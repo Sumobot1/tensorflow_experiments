@@ -76,19 +76,19 @@ def cnn_model_fn(features, labels, mode, params):
         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 
-    return tf_model_estimator(logits, labels, predictions, mode, params)
+    return tf_model_outputs(logits, labels, predictions, mode, params)
 
 
 def fast_cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Convolutional Layer #1
-    conv1 = conv_2d(features, 32, [3, 3], "same", "leaky_relu")
+    conv1 = conv_2d_layer(features, 32, [3, 3], "same", "leaky_relu")
     # Pooling Layer #1
-    pool_1 = max_pool_2d(conv1, [2, 2], 2)
+    pool_1 = max_pool_2d_layer(conv1, [2, 2], 2)
     # Dense Layer
-    pool1_flat = flatten(pool_1)
+    pool1_flat = flatten_layer(pool_1)
     # Logits Layer
-    logits = dense(pool1_flat, 2)
+    logits = dense_layer(pool1_flat, 2)
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
         "classes": tf.argmax(input=logits, axis=1),
