@@ -86,3 +86,4 @@ if __name__ == "__main__":
     main(args.clean, args.num_epochs, args.start_val_at, args.start_summary_at, args.train_batch_size, args.config_file, args.model_dir, args.model_name, args.model_file)
 
 # Example Usage: python3 train_model.py --clean --num-epochs 5 --start-summary-at 5 --train-batch-size 110 --model-dir cat_dog_cnn_desktop --model-name cnn_model_fn
+#                python3 train_model.py --num-epochs 15 --start-summary-at 5 --train-batch-size 110 --model-dir cat_dog_cnn_desktop --model-name cnn_model_fn model_13

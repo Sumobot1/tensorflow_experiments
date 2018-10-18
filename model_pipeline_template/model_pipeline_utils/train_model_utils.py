@@ -50,29 +50,20 @@ def get_io_placeholders(next_example, next_label, input_dims, output_dims):
 
 
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary):
-    print("in train model")
     saver = tf.train.Saver(max_to_keep=num_epochs)
     starting_epoch, counter = 0, 0
+    min_validation_cost = sys.maxsize
     # Note - the model checkpoints only have the weights - the model still needs to be declared
     if ckpt_path is not None and tf.train.checkpoint_exists(ckpt_path):
-        print("restoring checkpoint {}".format(ckpt_path))
+        print("Restoring checkpoint {}".format(ckpt_path))
         saver.restore(sess, ckpt_path)
-        starting_epoch = int(ckpt_path.split('_')[-1])
+        starting_epoch = int(ckpt_path.split('_')[-1]) + 1
+        min_validation_cost = float(np.load('models/{}/min_cost.npy'.format(model_dir)))
     else:
-        print("else")
+        print("No checkpoint to restore... starting from scratch")
         sess.run(tf.global_variables_initializer())
-    # counter = 0
-    avg_validation_costs = [sys.maxsize, sys.maxsize, sys.maxsize]
-    # Do not start doing histogram stuff until certain epoch number??
-    # Would need to save/load model on certain epochs
-    # Also wanna use cprint
-    print("here")
-    print(starting_epoch)
-    print(num_epochs)
     for epoch in range(starting_epoch, num_epochs):
-        print("here2")
-        # TRAINING
-        start = time.time()
+        train_start = time.time()
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
             session_vars = [merged, loss, predictions, training_op] if epoch >= epochs_before_summary else [loss, predictions, training_op]
@@ -104,14 +95,13 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
                 y_pred_val = y_val_pred['probabilities'] if y_pred_val is None else np.concatenate((y_pred_val, y_val_pred['probabilities']))
                 val_cost += cost_val_value
                 print("Val Step Complete, cost: {:0.5f}".format(cost_val_value), end="\r")
-            print()
             avg_val_cost = val_cost / float(num_val_steps)
-            cprint("Done - Time: {} avg validation cost: {}".format(time.time() - start_ting, avg_val_cost), "green")
-            print("min(val cost ting): {}, avg cost: {}".format(min(avg_validation_costs[-3:]), avg_val_cost))
-            if min(avg_validation_costs[-3:]) > avg_val_cost:
+            cprint("\nDone - Time: {} avg validation cost: {}".format(time.time() - val_start, avg_val_cost), "green")
+            if min_validation_cost > avg_val_cost:
                 save_path = saver.save(sess, "models/{}/model_{}".format(model_dir, epoch))
+                min_validation_cost = avg_val_cost
+                np.save("models/{}/min_cost.npy".format(model_dir), np.array(min_validation_cost))
                 print("Saved validation at {}".format(save_path))
-                avg_validation_costs.append(avg_val_cost)
             ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
             os.mkdir(ckpt_path)
             np.save(os.path.join(ckpt_path, "x_val.npy"), x_val)
