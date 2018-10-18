@@ -73,15 +73,11 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
             # accuracy = sess.run(tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy"))
             print("Step {} complete, cost: {:0.5f}".format(step, cost_value), end="\r")
-        print()
-        print("Time: {} - {} seconds per step".format(time.time() - start, float(time.time() - start) / float(num_steps)))
+        print("\nTime: {} - {} seconds per step".format(time.time() - train_start, float(time.time() - train_start) / float(num_steps)))
         if epoch >= epochs_before_validation:
-            # VALIDATION
-            x_val = None
-            y_val = None
-            y_pred_val = None
+            x_val, y_val, y_pred_val = None, None, None
             val_cost = 0
-            start_ting = time.time()
+            val_start = time.time()
             for step in range(num_val_steps):
                 X_val, Y_val = sess.run([image_val_batch, label_val_batch])
                 # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets

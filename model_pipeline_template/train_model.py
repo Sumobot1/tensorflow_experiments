@@ -42,8 +42,6 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     # next_example, next_label = imgs_input_fn(['train_0.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
     train_records, train_record_lengths = get_tfrecords('train')
     val_records, val_record_lengths = get_tfrecords('val')
-    total_training_files = sum(train_record_lengths)
-    total_num_steps = int(total_training_files / train_batch_size)
     model_fn = get_appropriate_model(model_name)
 
     tf.reset_default_graph()
@@ -67,7 +65,6 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('tf_summaries/train', sess.graph)
     test_writer = tf.summary.FileWriter('tf_summaries/val')
-    print("num_steps: {}".format(num_val_steps))
     train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, val_start_epoch, summary_start_epoch)
 
 
