@@ -22,11 +22,12 @@ def cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Try separable conv2d - Didn't work.
     # Don't wrap blocks in name scopes - the tensorboard graph looks wack...
-    conv1 = tf.layers.conv2d(inputs=features, filters=77, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv1")
+    conv1 = conv_2d_layer(features, 77, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv1', summary=params["histogram_summary"])
+    # conv1 = tf.layers.conv2d(inputs=features, filters=77, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv1")
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, name="pool1")
     norm1 = tf.layers.batch_normalization(inputs=pool1, axis=3, name="norm1")
     if params["histogram_summary"]:
-        tf.summary.histogram("conv1", conv1)
+        # tf.summary.histogram("conv1", conv1)
         tf.summary.histogram("pool1", pool1)
         tf.summary.histogram("norm1", norm1)
 
@@ -82,7 +83,7 @@ def cnn_model_fn(features, labels, mode, params):
 def fast_cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     # Convolutional Layer #1
-    conv1 = conv_2d_layer(features, 32, [3, 3], "same", "leaky_relu")
+    conv1 = conv_2d_layer(features, 32, [3, 3], "conv1", "same", "leaky_relu")
     # Pooling Layer #1
     pool_1 = max_pool_2d_layer(conv1, [2, 2], 2)
     # Dense Layer
@@ -92,8 +93,7 @@ def fast_cnn_model_fn(features, labels, mode, params):
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
         "classes": tf.argmax(input=logits, axis=1),
-        # Add `softmax_tensor` to the graph. It is used for PREDICT and by the
-        # `logging_hook`.
+        # Add `softmax_tensor` to the graph. It is used for PREDICT and by the `logging_hook`.
         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 

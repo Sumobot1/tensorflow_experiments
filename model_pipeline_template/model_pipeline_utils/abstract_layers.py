@@ -19,8 +19,11 @@ def input_layer(input_layer, output_shape):
 
 # filter_size: number - how many nodes in convolution (32 - 32x32 convolution)
 # kernel_size: array - dimensions of kernel (ex. [3, 3])
-def conv_2d_layer(input_layer, filter_size, kernel_size, padding="same", activation_fn='relu', initializer='he_normal'):
-    return tf.layers.conv2d(inputs=input_layer, filters=filter_size, kernel_size=kernel_size, padding="same", activation=activation_fns[activation_fn], kernel_initializer=kernel_initializers[initializer])
+def conv_2d_layer(input_layer, filter_size, kernel_size, padding_type, activation_fn, initializer, layer_name, summary=False):
+    conv_layer = tf.layers.conv2d(inputs=input_layer, filters=filter_size, kernel_size=kernel_size, padding=padding_type, activation=activation_fns[activation_fn], kernel_initializer=kernel_initializers[initializer], name=layer_name)
+    if summary:
+        tf.summary.histogram(layer_name, conv_layer)
+    return conv_layer
 
 
 def max_pool_2d_layer(input_layer, pool_size=[2, 2], stride_size=2):
