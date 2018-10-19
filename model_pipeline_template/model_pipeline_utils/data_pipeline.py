@@ -241,6 +241,11 @@ def clear_old_tfrecords():
         os.remove(file)
 
 
+def clear_dir(graph_dir):
+    if os.path.isdir(graph_dir): shutil.rmtree(graph_dir)
+    os.makedirs('graphs/{}'.format(graph_dir), exist_ok=True)
+
+
 # Function to turn file names into JSON files for dog and cat dataset
 def make_json_from_file_names(data_dir):
     image_files = glob.glob(os.path.join(data_dir, "*.jpg"))
