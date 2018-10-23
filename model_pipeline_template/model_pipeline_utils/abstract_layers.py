@@ -40,3 +40,14 @@ def dropout_layer(input_layer, dropout_rate, training_mode):
 
 def dense_layer(input_layer, num_units, activation_fn='none'):
     return tf.layers.dense(inputs=input_layer, units=num_units, activation=activation_fns[activation_fn])
+
+
+def mean_softmax_cross_entropy_with_logits(labels, logits, params):
+    # Note:
+    # tf.losses.sparse_softmax_cross_entropy is depricated and will be removed soon
+    # tf.nn.sparse_softmax_cross_entropy_with_logits works differently and returns a tensor instead of a differentiable value.
+    # It needs to be wrapped in tf.reduce_mean to work properly
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits), name='loss_layer')
+    if params["loss_summary"]:
+        tf.summary.scalar("loss", loss)
+    return loss

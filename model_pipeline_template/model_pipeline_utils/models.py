@@ -1,24 +1,15 @@
+import pdb
 import tensorflow as tf
 from model_pipeline_utils.estimator_hooks import SuperWackHook
-from model_pipeline_utils.abstract_layers import input_layer, conv_2d_layer, max_pool_2d_layer, flatten_layer, dense_layer, dropout_layer
+from model_pipeline_utils.abstract_layers import input_layer, conv_2d_layer, max_pool_2d_layer, flatten_layer, dense_layer, dropout_layer, mean_softmax_cross_entropy_with_logits
 
 
 def tf_model_outputs(logits, labels, predictions, mode, params):
     # If predict and not return_extimator, return predictions
-    if mode == "train":
-        # Note:
-        # tf.losses.sparse_softmax_cross_entropy is depricated and will be removed soon
-        # tf.nn.sparse_softmax_cross_entropy_with_logits works differently and returns a tensor instead of a differentiable value.
-        # It needs to be wrapped in tf.reduce_mean to work properly
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits), name='loss_layer')
-        if params["loss_summary"]:
-            tf.summary.scalar("loss", loss)
-        return (loss, predictions)
-    elif mode == "predict":
-        return predictions
+    return tf.cond(mode, lambda: (mean_softmax_cross_entropy_with_logits(labels, logits, params), predictions), lambda: (tf.constant(0, dtype=tf.float32), predictions))
 
 
-def cnn_model_fn(features, labels, mode, params):
+def cnn_model_fn(features, labels, mode, final_dropout_keep_prob, params):
     """Model function for CNN."""
     # Try separable conv2d - Didn't work.
     # Don't wrap blocks in name scopes - the tensorboard graph looks wack...
@@ -61,7 +52,7 @@ def cnn_model_fn(features, labels, mode, params):
 
     pool5_flat = tf.layers.flatten(inputs=norm5, name="pool5_flat")
     dense = tf.layers.dense(inputs=pool5_flat, units=42, activation=tf.nn.leaky_relu, name="dense")
-    dropout = tf.layers.dropout(inputs=dense, rate=0.9, training=params["use_dropout"], name="dropout")
+    dropout = tf.layers.dropout(inputs=dense, rate=0.9, training=mode, name="dropout")
     if params["histogram_summary"]:
         tf.summary.histogram("pool5_flat", pool5_flat)
         tf.summary.histogram("dense", dense)
