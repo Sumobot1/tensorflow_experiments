@@ -9,7 +9,7 @@ def tf_model_outputs(logits, labels, predictions, mode, params):
     return tf.cond(mode, lambda: (mean_softmax_cross_entropy_with_logits(labels, logits, params), predictions), lambda: (tf.constant(0, dtype=tf.float32), predictions))
 
 
-def cnn_model_fn(features, labels, mode, final_dropout_keep_prob, params):
+def cnn_model_fn(features, labels, mode, final_dropout_rate, params):
     """Model function for CNN."""
     # Try separable conv2d - Didn't work.
     # Don't wrap blocks in name scopes - the tensorboard graph looks wack...

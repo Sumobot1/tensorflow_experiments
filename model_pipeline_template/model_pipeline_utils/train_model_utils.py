@@ -49,7 +49,7 @@ def get_io_placeholders(next_example, next_label, input_dims, output_dims):
     return tf.placeholder_with_default(next_example, shape=input_dims), tf.placeholder_with_default(next_label, shape=output_dims)
 
 
-def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary, is_train):
+def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary, is_train, final_dropout_rate):
     saver = tf.train.Saver(max_to_keep=num_epochs)
     starting_epoch, counter = 0, 0
     min_validation_cost = sys.maxsize
@@ -68,7 +68,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
             X, Y = sess.run([image_batch, label_batch])
             session_vars = [merged, loss, predictions, training_op] if epoch >= epochs_before_summary else [loss, predictions, training_op]
             # Or you could send in keep_prob to dropout??? ==================================================================================================================================================
-            cost_value, predictions_value = train_model_step(sess, session_vars, {image_batch: X, label_batch: Y, is_train: True}, epoch, epochs_before_summary, train_writer, counter, "train")
+            cost_value, predictions_value = train_model_step(sess, session_vars, {image_batch: X, label_batch: Y, is_train: True, final_dropout_rate: 0.9}, epoch, epochs_before_summary, train_writer, counter, "train")
             counter += 1
             # Note: Do NOT add accuracy calculation here.  It makes training much slower! (6s vs 19s)
             # correct = tf.equal(tf.argmax(input=Y, axis=1), predictions_value["classes"], name="correct")
@@ -85,7 +85,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
                 # https://www.tensorflow.org/performance/performance_guide#general_best_practices
                 # ^ Feed dict is not much slower than the tf.data api for a single gpu
                 session_vars = [merged, loss, predictions] if epoch >= epochs_before_summary else [loss, predictions]
-                cost_val_value, y_val_pred = train_model_step(sess, session_vars, {image_batch: X_val, label_batch: Y_val, is_train: True}, epoch, epochs_before_summary, test_writer, counter, "test")
+                cost_val_value, y_val_pred = train_model_step(sess, session_vars, {image_batch: X_val, label_batch: Y_val, is_train: True, final_dropout_rate: 0}, epoch, epochs_before_summary, test_writer, counter, "test")
                 counter += 1
                 x_val = X_val if x_val is None else np.concatenate((x_val, X_val))
                 y_val = Y_val if y_val is None else np.concatenate((y_val, Y_val))

@@ -51,12 +51,11 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     image_batch, label_batch = get_io_placeholders(next_example, next_label, input_dims, output_dims)
     image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims)
     is_train = tf.placeholder_with_default(False, shape=(), name="is_training_")
-    final_dropout_keep_prob = tf.placeholder_with_default(0.9, dtype=tf.float32, shape=[], name="final_dropout_keep_prob")
+    final_dropout_rate = tf.placeholder_with_default(0.9, shape=[], name="final_dropout_rate")
     # tf.placeholder_with_default(next_example, shape=input_dims)
     # Cannot change histogram summary and then reload model from the same checkpoint
     # TODO: Get rid of unneeded params
-    pdb.set_trace()
-    loss, predictions = model_fn(image_batch, label_batch, is_train, final_dropout_keep_prob, params={"return_estimator": False, "histogram_summary": False, "loss_summary": True, "use_dropout": True})
+    loss, predictions = model_fn(image_batch, label_batch, is_train, final_dropout_rate, params={"return_estimator": False, "histogram_summary": False, "loss_summary": True, "use_dropout": True})
     optimizer = tf.train.AdamOptimizer()
     training_op = optimizer.minimize(loss, name="training_op")
     num_steps = get_num_steps(train_record_lengths, train_batch_size, DATA_REPETITIONS_PER_EPOCH)
@@ -69,7 +68,7 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('tf_summaries/train', sess.graph)
     test_writer = tf.summary.FileWriter('tf_summaries/val')
-    train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, val_start_epoch, summary_start_epoch, is_train)
+    train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, val_start_epoch, summary_start_epoch, is_train, final_dropout_rate)
 
 
 if __name__ == "__main__":
