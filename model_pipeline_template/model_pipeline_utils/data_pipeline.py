@@ -221,15 +221,12 @@ def create_val_dir():
     return validation_save_path
 
 
-def clean_model_dir():
+def clean_model_dir(model_dir):
     try:
-        shutil.rmtree('models/cat_dog_cnn_desktop/')
+        shutil.rmtree('models/{}/'.format(model_dir))
     except:
         print("Unable to remove directory - perhaps it does not exist?")
-    try:
-        shutil.rmtree('models/cat_dog_cnn_laptop/')
-    except:
-        print("Unable to remove directory - perhaps it does not exist?")
+    os.makedirs('models/{}'.format(model_dir))
     try:
         shutil.rmtree('tf_summaries/')
     except:

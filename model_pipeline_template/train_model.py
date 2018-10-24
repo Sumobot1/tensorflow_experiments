@@ -36,7 +36,7 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     validation_save_path = create_val_dir()
     ckpt_path = 'models/{}/{}'.format(model_dir, model_file) if model_file else None
     if clean_dir:
-        clean_model_dir()
+        clean_model_dir(model_dir)
     train_frac, val_frac, test_frac, input_dims, output_dims = read_model_config(config_file)
     # sess = tf.InteractiveSession()
     # next_example, next_label = imgs_input_fn(['train_0.tfrecords'], 'train', perform_shuffle=True, repeat_count=5, batch_size=20)
