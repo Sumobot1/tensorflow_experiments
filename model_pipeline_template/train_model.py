@@ -8,6 +8,7 @@ import os
 import numpy as np
 import time
 import json
+from termcolor import cprint
 
 from functools import reduce
 from model_pipeline_utils.data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir
@@ -16,7 +17,6 @@ from model_pipeline_utils.train_model_utils import average, get_num_steps, train
 import argparse
 
 DATA_REPETITIONS_PER_EPOCH = 1
-VAL_BATCH_SIZE = 300
 
 # Notes:
 # 1. In general it is considered good practice to use list comprehension instead of map 99% of the time.
@@ -30,7 +30,7 @@ VAL_BATCH_SIZE = 300
 # 9. It does not appear to be possible to disable the histogram summary and reload the model at a different checkpoint.
 
 
-def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batch_size, config_file, model_dir, model_name, model_file):
+def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batch_size, config_file, model_dir, model_name, model_file, val_batch_size):
     # tf.logging.set_verbosity(tf.logging.INFO)
     tf.logging.set_verbosity(tf.logging.WARN)
     validation_save_path = create_val_dir()
@@ -47,7 +47,7 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     tf.reset_default_graph()
     sess = tf.InteractiveSession()
     next_example, next_label = imgs_input_fn(train_records, 'train', input_dims, output_dims, perform_shuffle=True, repeat_count=-1, batch_size=train_batch_size)
-    next_val_example, next_val_label = imgs_input_fn(val_records, 'val', input_dims, output_dims, perform_shuffle=False, repeat_count=-1, batch_size=VAL_BATCH_SIZE)
+    next_val_example, next_val_label = imgs_input_fn(val_records, 'val', input_dims, output_dims, perform_shuffle=False, repeat_count=-1, batch_size=val_batch_size)
     image_batch, label_batch = get_io_placeholders(next_example, next_label, input_dims, output_dims)
     image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims)
     is_train = tf.placeholder_with_default(False, shape=(), name="is_training_")
@@ -61,7 +61,10 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     num_steps = get_num_steps(train_record_lengths, train_batch_size, DATA_REPETITIONS_PER_EPOCH)
     print("Train record lengths: {}".format(train_record_lengths))
     print("Val record lengths: {}".format(val_record_lengths))
-    num_val_steps = get_num_steps(val_record_lengths, VAL_BATCH_SIZE, 1)
+    num_val_steps = get_num_steps(val_record_lengths, val_batch_size, 1)
+    if num_val_steps == 0:
+        cprint("Batch size is larger than number of validation records.  Please decrease val_batch_size", "red")
+        return
     os.makedirs("tf_summaries/train", exist_ok=True)
     os.makedirs("tf_summaries/val", exist_ok=True)
 
@@ -81,9 +84,10 @@ if __name__ == "__main__":
     parser.add_argument('--config-file', type=str, default='tfrecord_config.json', help='Location of tfrecord_config.json - defaults to the same directory as train_model.py')
     parser.add_argument('--model-dir', type=str, default=None, help="Directory to store model checkpoints in/load model checkpoints from")
     parser.add_argument('--model-name', type=str, default='cnn_model_fn', help="Name of model function - should match a model in model_pipeline_utils.models")
+    parser.add_argument('--val-batch-size', type=int, default=300, help="Validation batch size - defaults to 300")
     parser.add_argument('model_file', nargs='?', default=None)
     args = parser.parse_args()
-    main(args.clean, args.num_epochs, args.start_val_at, args.start_summary_at, args.train_batch_size, args.config_file, args.model_dir, args.model_name, args.model_file)
+    main(args.clean, args.num_epochs, args.start_val_at, args.start_summary_at, args.train_batch_size, args.config_file, args.model_dir, args.model_name, args.model_file, args.val_batch_size)
 
 # Example Usage: python3 train_model.py --clean --num-epochs 5 --start-summary-at 5 --train-batch-size 110 --model-dir cat_dog_cnn_desktop --model-name cnn_model_fn
 #                python3 train_model.py --num-epochs 15 --start-summary-at 5 --train-batch-size 110 --model-dir cat_dog_cnn_desktop --model-name cnn_model_fn model_13
