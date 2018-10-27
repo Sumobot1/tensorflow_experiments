@@ -1,3 +1,4 @@
+from termcolor import cprint
 from random import shuffle
 import json
 import glob
@@ -33,7 +34,7 @@ AUGMENT = 5
 # https://github.com/keras-team/keras/issues/3687
 # https://github.com/hellochick/PSPNet-tensorflow/issues/7
 # https://datascience.stackexchange.com/questions/5706/what-is-the-dying-relu-problem-in-neural-networks
-def load_image(addr, augment_data):
+def load_image(addr, augment_data, image_dims):
     datagen = ImageDataGenerator(
         rotation_range=40,
         width_shift_range=0.2,
@@ -44,7 +45,7 @@ def load_image(addr, augment_data):
         fill_mode='nearest',
         rescale=1. / 255)
     images = []
-    img = Image.open(addr).filter(ImageFilter.GaussianBlur(1)).resize((IMAGE_WIDTH, IMAGE_HEIGHT))
+    img = Image.open(addr).filter(ImageFilter.GaussianBlur(1)).resize((image_dims[1], image_dims[0]))
     array = img_to_array(img)
     array_normalized = ((array - array.min()) * (1. / 255.0 * 1)).astype('float32')
     images.append(array_normalized)
@@ -54,7 +55,7 @@ def load_image(addr, augment_data):
         for batch in datagen.flow(array, batch_size=1):
             if i >= AUGMENT - 1:
                 break
-            images.append(np.reshape(batch, [80, 80, 3]))
+            images.append(np.reshape(batch, image_dims))
             i += 1
     return images
 
@@ -69,10 +70,11 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def parallel_write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsize, augment_data=False):
+def parallel_write_tfrecord_file(addrs, labels, data_type, image_dims, max_records=sys.maxsize, augment_data=False):
     print("Parallel write tfrecord file {}".format(data_type))
     num_images = min(max_records, len(addrs))
-    processes = [mp.Process(target=write_tfrecord_file, args=(x, int(num_images / NUM_CPU_CORES * x), int(num_images / NUM_CPU_CORES * (x + 1)), addrs, labels, data_type)) for x in range(NUM_CPU_CORES)]
+    # Ran into trouble with concurrent.futures using too much memory.  Could make load_image a generator?
+    processes = [mp.Process(target=write_tfrecord_file, args=(x, int(num_images / NUM_CPU_CORES * x), int(num_images / NUM_CPU_CORES * (x + 1)), addrs, labels, data_type, image_dims)) for x in range(NUM_CPU_CORES)]
     for p in processes:
         p.start()
     # Exit the completed processes
@@ -82,7 +84,7 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, max_records=sys.maxsi
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
-def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_type):
+def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_type, image_dims):
     filename = 'train_val_test_datasets/{}_{}.tfrecords'.format(data_type, thread_num)
     # open the TFRecords file
     writer = tf.python_io.TFRecordWriter(filename)
@@ -93,7 +95,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
         if (i % 100 == 0):
             print('Thread {} completed {}/{}'.format(thread_num, i - start_index, total_files))
         augment_data = True if data_type == 'train' else False
-        imgs = load_image(addrs[i], augment_data)
+        imgs = load_image(addrs[i], augment_data, image_dims)
         for img in imgs:
             label = labels[i]
             feature = {'{}/label'.format(data_type): _bytes_feature(tf.compat.as_bytes(np.asarray(label).tostring())), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
@@ -160,10 +162,11 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
     val_labels = balanced_label_tensors[int(train_frac * len(balanced_images)):int((train_frac + val_frac) * len(balanced_images))]
     test_addrs = balanced_images[int((train_frac + val_frac) * len(balanced_images)):]
     test_labels = balanced_label_tensors[int((train_frac + val_frac) * len(balanced_label_tensors)):]
-
-    parallel_write_tfrecord_file(train_addrs, train_labels, 'train')
-    parallel_write_tfrecord_file(val_addrs, val_labels, 'val')
-    parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
+    start_time = time.time()
+    parallel_write_tfrecord_file(train_addrs, train_labels, 'train', image_dims)
+    cprint("Finished train records in {}".format(time.time() - start_time), "green")
+    parallel_write_tfrecord_file(val_addrs, val_labels, 'val', image_dims)
+    parallel_write_tfrecord_file(test_addrs, test_labels, 'test', image_dims)
 
     with open("tfrecord_config.json", 'w') as outfile:
             json.dump({"input_dims": image_dims, "output_dims": [len(image_label_tensors[0])], "data_split": [train_frac, val_frac, test_frac]}, outfile)
