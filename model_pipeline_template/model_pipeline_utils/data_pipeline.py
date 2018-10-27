@@ -243,7 +243,7 @@ def clear_old_tfrecords():
 
 
 def clear_dir(graph_dir):
-    if os.path.isdir(graph_dir): shutil.rmtree(graph_dir)
+    if os.path.isdir('graphs/{}'.format(graph_dir)): shutil.rmtree('graphs/{}'.format(graph_dir))
     os.makedirs('graphs/{}'.format(graph_dir), exist_ok=True)
 
 
