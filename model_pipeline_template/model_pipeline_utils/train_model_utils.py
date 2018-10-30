@@ -76,8 +76,8 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         train_start = time.time()
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
+            # Image is in RGB format (Not BGR)
             session_vars = [merged, loss, predictions, training_op] if epoch >= epochs_before_summary else [loss, predictions, training_op]
-            # Or you could send in keep_prob to dropout??? ==================================================================================================================================================
             cost_value, predictions_value = train_model_step(sess, session_vars, {image_batch: X, label_batch: Y, is_train: True, final_dropout_rate: 0.9}, epoch, epochs_before_summary, train_writer, counter, "train")
             counter += 1
             # Note: Do NOT add accuracy calculation here.  It makes training much slower! (6s vs 19s)
