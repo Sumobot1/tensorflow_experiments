@@ -238,13 +238,23 @@ def clean_model_dir(model_dir):
 
 def clear_old_tfrecords():
     os.makedirs('train_val_test_datasets', exist_ok=True)
-    for file in glob.glob('train_val_test_datasets/*.tfrecords'):
+    for file in glob.glob('train_val_test_datasets/*'):
         os.remove(file)
 
 
 def clear_dir(graph_dir):
     if os.path.isdir('graphs/{}'.format(graph_dir)): shutil.rmtree('graphs/{}'.format(graph_dir))
     os.makedirs('graphs/{}'.format(graph_dir), exist_ok=True)
+
+
+def read_json_file(path):
+    with open(path, 'r') as infile:
+        return json.load(infile)
+
+
+def write_json_file(config_file, output_object):
+    with open(config_file, 'w') as outfile:
+        json.dump(output_object, outfile)
 
 
 # Function to turn file names into JSON files for dog and cat dataset

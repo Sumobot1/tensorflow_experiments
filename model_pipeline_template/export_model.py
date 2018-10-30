@@ -12,7 +12,7 @@ import shutil
 
 from termcolor import cprint
 from functools import reduce
-from model_pipeline_utils.data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir, clear_dir
+from model_pipeline_utils.data_pipeline import generate_tfrecords, imgs_input_fn, get_tfrecords, clear_old_tfrecords, clean_model_dir, create_val_dir, clear_dir, write_json_file
 from model_pipeline_utils.models import cnn_model_fn, fast_cnn_model_fn
 from model_pipeline_utils.train_model_utils import average, get_num_steps, train_model, get_appropriate_model, read_model_config, get_io_placeholders
 import argparse
@@ -56,6 +56,7 @@ def main(graph_dir, config_file, model_dir, output_node_names, model_files):
             with tf.gfile.GFile(graph_path, "wb") as f:
                 f.write(output_graph_def.SerializeToString())
             cprint("Finished saving {}... {} ops in the final graph.".format(model_file, len(output_graph_def.node)), 'green')
+    write_json_file("model_output_config_{}.json".format(graph_dir), {"output": output_node_names})
 
 
 if __name__ == "__main__":
