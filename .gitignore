@@ -131,3 +131,9 @@ test*.npy
 
 # Tfrecord config
 */tfrecord_config.json
+
+# Graphs
+*/graphs/*
+
+# Model config
+model_output_config*.json
