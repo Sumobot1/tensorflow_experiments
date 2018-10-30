@@ -11,6 +11,7 @@ import tensorflow as tf
 from termcolor import cprint
 from model_pipeline_utils.data_pipeline import read_json_file
 from model_pipeline_utils.train_model_utils import show_image
+from model_pipeline_utils.prediction_functions import interactive_check_predictions, get_appropriate_prediction_fn
 
 
 def load_graph(frozen_graph_filename):
@@ -19,7 +20,6 @@ def load_graph(frozen_graph_filename):
     with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
-
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
         # The name var will prefix every op/nodes in your graph
@@ -28,30 +28,11 @@ def load_graph(frozen_graph_filename):
     return graph
 
 
-def interactive_check_predictions(img, prediction):
-    print("cat" if prediction[0] == 1 else "dog")
-    show_image(img)
-
-
-def cat_dog_classifier_output(test_predictions, test_ids, output_labels):
-    # http://pandas.pydata.org/pandas-docs/version/0.23.4/generated/pandas.DataFrame.html
-    # test_preds = sorted(list(zip(test_ids, test_predictions)))
-    pdb.set_trace()
-
-
-def get_appropriate_prediction_fn(output_func):
-    if output_func == "cat_dog_classifier_output":
-        return cat_dog_classifier_output
-    else:
-        cprint("Prediction function is not made yet - go make it?", "red")
-
-
 def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func, output_labels):
     output_tensor_names = read_json_file("model_output_config_{}.json".format(graph_dir))["output"]
     for graph in frozen_graph_names:
         # We use our "load_graph" function
         graph = load_graph('graphs/{}/{}.pb'.format(graph_dir, graph))
-
         # We can verify that we can access the list of operations in the graph
         for op in graph.get_operations():
             print(op.name)
@@ -85,7 +66,6 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
 
 
 if __name__ == '__main__':
-    # Let's allow the user to pass the filename as an argument
     parser = argparse.ArgumentParser()
     parser.add_argument("--graph-dir", default=None, help="Directory graph is stored in -> graphs/<GRAPH_DIR>")
     parser.add_argument('--config-file', type=str, default='tfrecord_config.json', help='Location of tfrecord_config.json - defaults to the same directory as train_model.py')
@@ -95,3 +75,5 @@ if __name__ == '__main__':
     parser.add_argument("--output-labels", default=None, help="Name of the keys in the prediction csv(s)/json(s)")
     args = parser.parse_args()
     main(args.graph_dir, args.config_file, args.frozen_graph_names.split(","), args.test_data_dir, args.output_func, args.output_labels.split(','))
+
+# Example: python3 make_predictions.py --graph-dir cat_dog_cnn_desktop --frozen-graph-names model_10,model_12 --test-data-dir '/home/michael/hard_drive/datasets/dogs_vs_cats_data/test' --output-func cat_dog_classifier_output --output-labels id,label
