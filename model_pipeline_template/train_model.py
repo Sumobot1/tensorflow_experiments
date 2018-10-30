@@ -48,9 +48,9 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     sess = tf.InteractiveSession()
     next_example, next_label = imgs_input_fn(train_records, 'train', input_dims, output_dims, perform_shuffle=True, repeat_count=-1, batch_size=train_batch_size)
     next_val_example, next_val_label = imgs_input_fn(val_records, 'val', input_dims, output_dims, perform_shuffle=False, repeat_count=-1, batch_size=val_batch_size)
-    image_batch, label_batch = get_io_placeholders(next_example, next_label, input_dims, output_dims)
-    image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims)
-    is_train = tf.placeholder_with_default(False, shape=(), name="is_training_")
+    image_batch, label_batch = get_io_placeholders(next_example, next_label, input_dims, output_dims, "image_batch", "label_batch")
+    image_val_batch, label_val_batch = get_io_placeholders(next_val_example, next_val_label, input_dims, output_dims, "image_val_batch", "label_val_batch")
+    is_train = tf.placeholder_with_default(False, shape=(), name="is_training")
     final_dropout_rate = tf.placeholder_with_default(0.9, shape=[], name="final_dropout_rate")
     # tf.placeholder_with_default(next_example, shape=input_dims)
     # Cannot change histogram summary and then reload model from the same checkpoint

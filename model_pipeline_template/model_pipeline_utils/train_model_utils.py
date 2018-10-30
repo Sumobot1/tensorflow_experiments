@@ -1,3 +1,6 @@
+import cv2
+import matplotlib.pyplot as plt
+from PIL import Image
 import pdb
 import json
 from functools import reduce
@@ -8,6 +11,13 @@ import os
 import sys
 from termcolor import cprint
 from model_pipeline_utils.models import fast_cnn_model_fn, cnn_model_fn
+
+
+def show_image(img):
+    # cv2.imshow('image',img)
+    plt.imshow(img, interpolation = 'bicubic')
+    plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+    plt.show()
 
 
 def average(list):
@@ -45,8 +55,8 @@ def read_model_config(config_file):
         return train_frac, val_frac, test_frac, input_dims, output_dims
 
 
-def get_io_placeholders(next_example, next_label, input_dims, output_dims):
-    return tf.placeholder_with_default(next_example, shape=input_dims), tf.placeholder_with_default(next_label, shape=output_dims)
+def get_io_placeholders(next_example, next_label, input_dims, output_dims, input_name, output_name):
+    return tf.placeholder_with_default(next_example, shape=input_dims, name=input_name), tf.placeholder_with_default(next_label, shape=output_dims, name=output_name)
 
 
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary, is_train, final_dropout_rate):

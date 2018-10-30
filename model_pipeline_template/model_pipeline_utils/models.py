@@ -52,7 +52,7 @@ def cnn_model_fn(features, labels, mode, final_dropout_rate, params):
 
     pool5_flat = tf.layers.flatten(inputs=norm5, name="pool5_flat")
     dense = tf.layers.dense(inputs=pool5_flat, units=42, activation=tf.nn.leaky_relu, name="dense")
-    dropout = tf.layers.dropout(inputs=dense, rate=0.9, training=mode, name="dropout")
+    dropout = tf.layers.dropout(inputs=dense, rate=final_dropout_rate, training=mode, name="dropout")
     if params["histogram_summary"]:
         tf.summary.histogram("pool5_flat", pool5_flat)
         tf.summary.histogram("dense", dense)
