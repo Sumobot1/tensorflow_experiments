@@ -118,22 +118,5 @@ MNIST-data/
 *.meta
 */checkpoint
 
-# Validation Results directory
-validation_results/
-
-# Numpy files for number of records
-train*.npy
-val*.npy
-test*.npy
-
-# TFEvents
-*.tfevents*
-
-# Tfrecord config
-*/tfrecord_config.json
-
-# Graphs
-*/graphs/*
-
-# Model config
-model_output_config*.json
+# Anything in a data dir
+*/data/*
