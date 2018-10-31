@@ -85,7 +85,7 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, image_dims, max_recor
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
 def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_type, image_dims):
-    filename = 'train_val_test_datasets/{}_{}.tfrecords'.format(data_type, thread_num)
+    filename = 'data/train_val_test_datasets/{}_{}.tfrecords'.format(data_type, thread_num)
     # open the TFRecords file
     writer = tf.python_io.TFRecordWriter(filename)
     total_files = end_index - start_index
@@ -106,7 +106,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
             files_written += 1
     writer.close()
     sys.stdout.flush()
-    np.save('train_val_test_datasets/{}_{}.npy'.format(data_type, thread_num), np.array([files_written]))
+    np.save('data/train_val_test_datasets/{}_{}.npy'.format(data_type, thread_num), np.array([files_written]))
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -168,7 +168,7 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
     parallel_write_tfrecord_file(val_addrs, val_labels, 'val', image_dims)
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test', image_dims)
 
-    with open("tfrecord_config.json", 'w') as outfile:
+    with open("data/tfrecord_config.json", 'w') as outfile:
             json.dump({"input_dims": image_dims, "output_dims": [len(image_label_tensors[0])], "data_split": [train_frac, val_frac, test_frac]}, outfile)
 
 
@@ -210,15 +210,15 @@ def imgs_input_fn(filenames, data_type, input_dims, output_dims, perform_shuffle
 
 
 def get_tfrecords(name, base_dir=os.getcwd()):
-    records = glob.glob(os.path.join(base_dir, 'train_val_test_datasets/{}*.tfrecords'.format(name)))
-    numpy_records = glob.glob(os.path.join(base_dir, 'train_val_test_datasets/{}*.npy'.format(name)))
+    records = glob.glob(os.path.join(base_dir, 'data/train_val_test_datasets/{}*.tfrecords'.format(name)))
+    numpy_records = glob.glob(os.path.join(base_dir, 'data/train_val_test_datasets/{}*.npy'.format(name)))
     records.sort()
     numpy_records.sort()
     return records, [np.load(x)[0] for x in numpy_records]
 
 
 def create_val_dir():
-    validation_save_path = os.path.join(os.getcwd(), 'validation_results', time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
+    validation_save_path = os.path.join(os.getcwd(), 'data', 'validation_results', time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
     if not os.path.exists(validation_save_path):
         os.makedirs(validation_save_path)
     return validation_save_path
@@ -226,25 +226,25 @@ def create_val_dir():
 
 def clean_model_dir(model_dir):
     try:
-        shutil.rmtree('models/{}/'.format(model_dir))
+        shutil.rmtree('data/models/{}/'.format(model_dir))
     except:
         print("Unable to remove directory - perhaps it does not exist?")
-    os.makedirs('models/{}'.format(model_dir))
+    os.makedirs('data/models/{}'.format(model_dir))
     try:
-        shutil.rmtree('tf_summaries/')
+        shutil.rmtree('data/tf_summaries/')
     except:
         print("Unable to remove tf_summaries directory")
 
 
 def clear_old_tfrecords():
-    os.makedirs('train_val_test_datasets', exist_ok=True)
-    for file in glob.glob('train_val_test_datasets/*'):
+    os.makedirs('data/train_val_test_datasets', exist_ok=True)
+    for file in glob.glob('data/train_val_test_datasets/*'):
         os.remove(file)
 
 
 def clear_dir(graph_dir):
-    if os.path.isdir('graphs/{}'.format(graph_dir)): shutil.rmtree('graphs/{}'.format(graph_dir))
-    os.makedirs('graphs/{}'.format(graph_dir), exist_ok=True)
+    if os.path.isdir('data/graphs/{}'.format(graph_dir)): shutil.rmtree('data/graphs/{}'.format(graph_dir))
+    os.makedirs('data/graphs/{}'.format(graph_dir), exist_ok=True)
 
 
 def read_json_file(path):

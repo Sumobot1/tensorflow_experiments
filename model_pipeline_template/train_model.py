@@ -34,7 +34,7 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     # tf.logging.set_verbosity(tf.logging.INFO)
     tf.logging.set_verbosity(tf.logging.WARN)
     validation_save_path = create_val_dir()
-    ckpt_path = 'models/{}/{}'.format(model_dir, model_file) if model_file else None
+    ckpt_path = 'data/models/{}/{}'.format(model_dir, model_file) if model_file else None
     if clean_dir:
         clean_model_dir(model_dir)
     train_frac, val_frac, test_frac, input_dims, output_dims = read_model_config(config_file)
@@ -65,12 +65,12 @@ def main(clean_dir, num_epochs, val_start_epoch, summary_start_epoch, train_batc
     if num_val_steps == 0:
         cprint("Batch size is larger than number of validation records.  Please decrease val_batch_size", "red")
         return
-    os.makedirs("tf_summaries/train", exist_ok=True)
-    os.makedirs("tf_summaries/val", exist_ok=True)
+    os.makedirs("data/tf_summaries/train", exist_ok=True)
+    os.makedirs("data/tf_summaries/val", exist_ok=True)
 
     merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter('tf_summaries/train', sess.graph)
-    test_writer = tf.summary.FileWriter('tf_summaries/val')
+    train_writer = tf.summary.FileWriter('data/tf_summaries/train', sess.graph)
+    test_writer = tf.summary.FileWriter('data/tf_summaries/val')
     train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, val_start_epoch, summary_start_epoch, is_train, final_dropout_rate)
 
 
@@ -81,9 +81,9 @@ if __name__ == "__main__":
     parser.add_argument('--start-val-at', type=int, default=0, help='Do not test against the validation set until a certain epoch')
     parser.add_argument('--start-summary-at', type=int, default=0, help='Do not start the summary until a certain epoch')
     parser.add_argument('--train-batch-size', type=int, default=1, help="Training batch size")
-    parser.add_argument('--config-file', type=str, default='tfrecord_config.json', help='Location of tfrecord_config.json - defaults to the same directory as train_model.py')
-    parser.add_argument('--model-dir', type=str, default=None, help="Directory to store model checkpoints in/load model checkpoints from -> models/<MODEL_DIR>")
-    parser.add_argument('--model-name', type=str, default='cnn_model_fn', help="Name of model function - should match a model in model_pipeline_utils.models -> models/<MODEL_DIR>/<MODEL_NAME>")
+    parser.add_argument('--config-file', type=str, default='data/tfrecord_config.json', help='Location of tfrecord_config.json - defaults to data/tfrecord_config.json')
+    parser.add_argument('--model-dir', type=str, default=None, help="Directory to store model checkpoints in/load model checkpoints from -> data/models/<MODEL_DIR>")
+    parser.add_argument('--model-name', type=str, default='cnn_model_fn', help="Name of model function - should match a model in model_pipeline_utils.models -> data/models/<MODEL_DIR>/<MODEL_NAME>")
     parser.add_argument('--val-batch-size', type=int, default=300, help="Validation batch size - defaults to 300")
     parser.add_argument('model_file', nargs='?', default=None)
     args = parser.parse_args()

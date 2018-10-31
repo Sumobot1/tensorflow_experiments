@@ -10,9 +10,9 @@ def interactive_check_predictions(img, prediction):
 
 def cat_dog_classifier_output(test_predictions, test_ids, output_labels):
     test_ids, test_preds = list(zip(*sorted(list(zip(test_ids, test_predictions)))))
-    df = {output_labels[0]: test_ids, output_labels[1]: [arr[0] for arr in test_preds[0]]}
+    df = {output_labels[0]: test_ids, output_labels[1]: [arr[0] for arr in test_preds]}
     df = pd.DataFrame(data=df)
-    df.to_csv("predictions.csv", sep=',', index=False)
+    df.to_csv("data/predictions.csv", sep=',', index=False)
 
 
 def get_appropriate_prediction_fn(output_func):

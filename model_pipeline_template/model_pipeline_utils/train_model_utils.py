@@ -15,7 +15,7 @@ from model_pipeline_utils.models import fast_cnn_model_fn, cnn_model_fn
 
 def show_image(img):
     # cv2.imshow('image',img)
-    plt.imshow(img, interpolation = 'bicubic')
+    plt.imshow(img, interpolation='bicubic')
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     plt.show()
 
@@ -68,7 +68,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         print("Restoring checkpoint {}".format(ckpt_path))
         saver.restore(sess, ckpt_path)
         starting_epoch = int(ckpt_path.split('_')[-1]) + 1
-        min_validation_cost = float(np.load('models/{}/min_cost.npy'.format(model_dir)))
+        min_validation_cost = float(np.load('data/models/{}/min_cost.npy'.format(model_dir)))
     else:
         print("No checkpoint to restore... starting from scratch")
         sess.run(tf.global_variables_initializer())
@@ -105,9 +105,9 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
             avg_val_cost = val_cost / float(num_val_steps)
             cprint("\nDone - Time: {} avg validation cost: {}".format(time.time() - val_start, avg_val_cost), "green")
             if min_validation_cost > avg_val_cost:
-                save_path = saver.save(sess, "models/{}/model_{}".format(model_dir, epoch))
+                save_path = saver.save(sess, "data/models/{}/model_{}".format(model_dir, epoch))
                 min_validation_cost = avg_val_cost
-                np.save("models/{}/min_cost.npy".format(model_dir), np.array(min_validation_cost))
+                np.save("data/models/{}/min_cost.npy".format(model_dir), np.array(min_validation_cost))
                 print("Saved validation at {}".format(save_path))
             ckpt_path = os.path.join(validation_save_path, 'epoch_{}'.format(epoch))
             os.mkdir(ckpt_path)

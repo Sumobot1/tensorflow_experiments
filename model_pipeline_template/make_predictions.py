@@ -29,10 +29,10 @@ def load_graph(frozen_graph_filename):
 
 
 def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func, output_labels):
-    output_tensor_names = read_json_file("model_output_config_{}.json".format(graph_dir))["output"]
+    output_tensor_names = read_json_file("data/model_output_config_{}.json".format(graph_dir))["output"]
     for graph in frozen_graph_names:
         # We use our "load_graph" function
-        graph = load_graph('graphs/{}/{}.pb'.format(graph_dir, graph))
+        graph = load_graph('data/graphs/{}/{}.pb'.format(graph_dir, graph))
         # We can verify that we can access the list of operations in the graph
         for op in graph.get_operations():
             print(op.name)
@@ -67,9 +67,9 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--graph-dir", default=None, help="Directory graph is stored in -> graphs/<GRAPH_DIR>")
-    parser.add_argument('--config-file', type=str, default='tfrecord_config.json', help='Location of tfrecord_config.json - defaults to the same directory as train_model.py')
-    parser.add_argument("--frozen-graph-names", default="results/frozen_model.pb", type=str, help="Frozen model file(s) to import -> graphs/<GRAPH_DIR>/<GRAPH_NAME,GRAPH_NAME,...>")
+    parser.add_argument("--graph-dir", default=None, help="Directory graph is stored in -> data/graphs/<GRAPH_DIR>")
+    parser.add_argument('--config-file', type=str, default='data/tfrecord_config.json', help='Location of tfrecord_config.json - defaults to the same directory as train_model.py')
+    parser.add_argument("--frozen-graph-names", default="data/graphs/frozen_model.pb", type=str, help="Frozen model file(s) to import -> data/graphs/<GRAPH_DIR>/<GRAPH_NAME,GRAPH_NAME,...>")
     parser.add_argument("--test-data-dir", default=None, help="Full path to test data directory")
     parser.add_argument("--output-func", default=None, help="Name of function to create prediction(s)")
     parser.add_argument("--output-labels", default=None, help="Name of the keys in the prediction csv(s)/json(s)")
