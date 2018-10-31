@@ -42,6 +42,7 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
         final_dropout_rate = graph.get_tensor_by_name('prefix/final_dropout_rate/input:0')
         input_dims = read_json_file(config_file)["input_dims"]
         preds = graph.get_tensor_by_name('prefix/prediction:0')
+        softmax_tensor = graph.get_tensor_by_name('prefix/softmax_tensor:0')
         # Don't need this but how well
         # softmax_tensor = graph.get_tensor_by_name("prefix/softmax_tensor:0")
         test_predictions, test_ids = [], []
@@ -54,7 +55,7 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
                 img = cv2.resize(img, (input_dims[1], input_dims[0]))
                 image_with_batch = img.reshape((1,) + img.shape)
                 # Cat is 0,1 (s0ftmax tensor), or 1 (predictions)
-                test_prediction = sess.run(preds, feed_dict={image_batch: image_with_batch, is_training: False, final_dropout_rate: 0})
+                test_prediction = sess.run([preds, softmax_tensor], feed_dict={image_batch: image_with_batch, is_training: False, final_dropout_rate: 0})
                 test_id = int(re.match(r'\d{1,999999999}', image).group())
                 test_predictions.append(test_prediction)
                 test_ids.append(test_id)
