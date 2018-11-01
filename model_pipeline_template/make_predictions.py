@@ -43,7 +43,7 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
         input_dims = read_json_file(config_file)["input_dims"]
         preds = graph.get_tensor_by_name('prefix/prediction:0')
         softmax_tensor = graph.get_tensor_by_name('prefix/softmax_tensor:0')
-        # Don't need this but how well
+        # Don't need this but oh well
         # softmax_tensor = graph.get_tensor_by_name("prefix/softmax_tensor:0")
         test_predictions, test_ids = [], []
         with tf.Session(graph=graph) as sess:
@@ -53,6 +53,7 @@ def main(graph_dir, config_file, frozen_graph_names, test_data_dir, output_func,
                 # Image gets read in as bgr - need to convert it to rgb
                 img = cv2.cvtColor(cv2.imread(os.path.join(test_data_dir, image)), cv2.COLOR_BGR2RGB)
                 img = cv2.resize(img, (input_dims[1], input_dims[0]))
+                img = img / 255.0
                 image_with_batch = img.reshape((1,) + img.shape)
                 # Cat is 0,1 (s0ftmax tensor), or 1 (predictions)
                 test_prediction = sess.run([preds, softmax_tensor], feed_dict={image_batch: image_with_batch, is_training: False, final_dropout_rate: 0})
