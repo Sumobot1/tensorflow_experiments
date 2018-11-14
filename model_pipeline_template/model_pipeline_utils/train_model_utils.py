@@ -59,6 +59,19 @@ def get_io_placeholders(next_example, next_label, input_dims, output_dims, input
     return tf.placeholder_with_default(next_example, shape=input_dims, name=input_name), tf.placeholder_with_default(next_label, shape=output_dims, name=output_name)
 
 
+def blur_batch(X):
+    # This is a function I made to run an experiment for work.
+    # I was comparing classification loss with varying amounts of blur
+    final_array = None
+    for x in X:
+        resized = cv2.resize(cv2.GaussianBlur(x, (1,1), 0.0), (84,84))
+        # resized = cv2.resize(x, (84,84))
+        resized = cv2.copyMakeBorder(resized, (167-84)//2+1, (167-84)//2, (167-84)//2+1, (167-84)//2, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+        resized = np.reshape(resized, (1,) + resized.shape)
+        final_array = resized if final_array is None else np.concatenate((final_array, resized))
+    X = final_array
+
+
 def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, predictions, training_op, num_val_steps, image_val_batch, label_val_batch, validation_save_path, merged, train_writer, test_writer, ckpt_path, model_dir, epochs_before_validation, epochs_before_summary, is_train, final_dropout_rate):
     saver = tf.train.Saver(max_to_keep=num_epochs)
     starting_epoch, counter = 0, 0
@@ -76,6 +89,8 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
         train_start = time.time()
         for step in range(num_steps):
             X, Y = sess.run([image_batch, label_batch])
+            blur_batch(X)
+            # WE SHOULD BE DOING THE BLUR HERE AS PART OF THE TRAIN_DATA - THAT WAY WE CAN USE THE SAME TFRECORD, AND ONLY GET THE EFFECT OF THE BLUR
             # Image is in RGB format (Not BGR)
             session_vars = [merged, loss, predictions, training_op] if epoch >= epochs_before_summary else [loss, predictions, training_op]
             cost_value, predictions_value = train_model_step(sess, session_vars, {image_batch: X, label_batch: Y, is_train: True, final_dropout_rate: 0.9}, epoch, epochs_before_summary, train_writer, counter, "train")
@@ -91,6 +106,7 @@ def train_model(sess, num_steps, num_epochs, image_batch, label_batch, loss, pre
             val_start = time.time()
             for step in range(num_val_steps):
                 X_val, Y_val = sess.run([image_val_batch, label_val_batch])
+                blur_batch(X_val)
                 # Need to send loss, predictions (outputs from cnn_model_fn) above.  Need to use same cnn model function for both training and validation sets
                 # https://www.tensorflow.org/performance/performance_guide#general_best_practices
                 # ^ Feed dict is not much slower than the tf.data api for a single gpu
