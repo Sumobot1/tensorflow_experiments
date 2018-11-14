@@ -195,12 +195,12 @@ def imgs_input_fn(filenames, data_type, input_dims, output_dims, perform_shuffle
     # This returns TensorFlow tensors for the image and labels.
     dataset = dataset.map(map_func=_parse_function, num_parallel_calls=NUM_CPU_CORES)
     if perform_shuffle:
-        # Randomizes input using a window of 256 elements (read into memory)
-        dataset = dataset.shuffle(buffer_size=100)
+        # Randomizes input using a window of 50 elements (read into memory)
+        dataset = dataset.shuffle(buffer_size=50)
     dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
     dataset = dataset.batch(batch_size)  # Batch size to use
     # How many elements (in this case batches) get consumed per epoch?
-    dataset = dataset.prefetch(buffer_size=300)
+    dataset = dataset.prefetch(buffer_size=100)
     # My added shit
     # iterator = dataset.make_initializable_iterator()
     # Working code =============================
