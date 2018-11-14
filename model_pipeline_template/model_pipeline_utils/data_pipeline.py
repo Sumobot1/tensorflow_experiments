@@ -45,6 +45,8 @@ def load_image(addr, augment_data, image_dims):
         fill_mode='nearest',
         rescale=1. / 255)
     images = []
+    # Really, we should be doing data augmentation on read for better randomness, but I like using my cpu for other
+    # things while training (GPU training makes my computer lag a bit as is)
     img = Image.open(addr).filter(ImageFilter.GaussianBlur(1)).resize((image_dims[1], image_dims[0]))
     array = img_to_array(img)
     array_normalized = ((array - array.min()) * (1. / 255.0 * 1)).astype('float32')
@@ -74,7 +76,10 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, image_dims, max_recor
     print("Parallel write tfrecord file {}".format(data_type))
     num_images = min(max_records, len(addrs))
     # Ran into trouble with concurrent.futures using too much memory.  Could make load_image a generator?
-    processes = [mp.Process(target=write_tfrecord_file, args=(x, int(num_images / NUM_CPU_CORES * x), int(num_images / NUM_CPU_CORES * (x + 1)), addrs, labels, data_type, image_dims)) for x in range(NUM_CPU_CORES)]
+    processes = [mp.Process(target=write_tfrecord_file,
+                            args=(x, int(num_images / NUM_CPU_CORES * x), int(num_images / NUM_CPU_CORES * (x + 1)),
+                                  addrs, labels, data_type, image_dims))
+                 for x in range(NUM_CPU_CORES)]
     for p in processes:
         p.start()
     # Exit the completed processes
