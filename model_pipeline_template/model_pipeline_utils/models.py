@@ -1,7 +1,7 @@
 import pdb
 import tensorflow as tf
 from model_pipeline_utils.estimator_hooks import SuperWackHook
-from model_pipeline_utils.abstract_layers import input_layer, conv_2d_layer, max_pool_2d_layer, flatten_layer, dense_layer, dropout_layer, mean_softmax_cross_entropy_with_logits
+from model_pipeline_utils.abstract_layers import reshape_layer, conv_2d_layer, max_pool_2d_layer, flatten_layer, dense_layer, dropout_layer, mean_softmax_cross_entropy_with_logits, batch_norm_layer
 
 
 def tf_model_outputs(logits, labels, predictions, mode, params):

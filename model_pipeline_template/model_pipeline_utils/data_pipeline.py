@@ -2,19 +2,10 @@ from termcolor import cprint
 from random import shuffle
 import json
 import glob
-import pdb
-import cv2
 import numpy as np
 import sys
 import tensorflow as tf
-from tqdm import tqdm
-from tensorflow.python.keras.applications.vgg16 import VGG16
-from tensorflow.python.keras import models
-from tensorflow.python.keras import layers
-from tensorflow.python.keras.preprocessing import image
-from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
-from tensorflow.python import keras
-from PIL import Image
+from keras.preprocessing.image import ImageDataGenerator, img_to_array
 import os
 import shutil
 import multiprocessing as mp
@@ -27,12 +18,14 @@ IMAGE_HEIGHT = 80
 NUM_CPU_CORES = 6
 AUGMENT = 5
 
-# If there are too many zeros in the image, relu outputs zero, and will never recover.  Using Keras preprocessing function instead
-# https://datascience.stackexchange.com/questions/21955/tensorflow-regression-model-giving-same-prediction-every-time
-# https://github.com/keras-team/keras/issues/3687
-# https://github.com/hellochick/PSPNet-tensorflow/issues/7
-# https://datascience.stackexchange.com/questions/5706/what-is-the-dying-relu-problem-in-neural-networks
+
 def load_image(addr, augment_data, image_dims):
+    # If there are too many zeros in the image, relu will output zero and never recover.
+    # Using Keras preprocessing function instead
+    # https://datascience.stackexchange.com/questions/21955/tensorflow-regression-model-giving-same-prediction-every-time
+    # https://github.com/keras-team/keras/issues/3687
+    # https://github.com/hellochick/PSPNet-tensorflow/issues/7
+    # https://datascience.stackexchange.com/questions/5706/what-is-the-dying-relu-problem-in-neural-networks
     datagen = ImageDataGenerator(
         rotation_range=40,
         width_shift_range=0.2,
@@ -83,7 +76,9 @@ def parallel_write_tfrecord_file(addrs, labels, data_type, image_dims, max_recor
     # Exit the completed processes
     for p in processes:
         p.join()
-    # write_tfrecord_file(0, int(num_images / NUM_CPU_CORES * 0), int(num_images / NUM_CPU_CORES * (0 + 1)), addrs, labels, data_type)
+    # Uncomment this to write tfrecord file in single process - good for debugging
+    # write_tfrecord_file(0, int(num_images / NUM_CPU_CORES * 0), int(num_images / NUM_CPU_CORES * (0 + 1)),
+    #                     addrs, labels, data_type, image_dims)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -95,13 +90,14 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
     files_written = 0
     # TODO: Need to provide some sort of indicator of progress (% complete)
     for i in range(start_index, end_index):
-        if (i % 100 == 0):
+        if i % 100 == 0:
             print('Thread {} completed {}/{}'.format(thread_num, i - start_index, total_files))
         augment_data = True if data_type == 'train' else False
         imgs = load_image(addrs[i], augment_data, image_dims)
         for img in imgs:
             label = labels[i]
-            feature = {'{}/label'.format(data_type): _bytes_feature(tf.compat.as_bytes(np.asarray(label).tostring())), '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
+            feature = {'{}/label'.format(data_type): _bytes_feature(tf.compat.as_bytes(np.asarray(label).tostring())),
+                       '{}/image'.format(data_type): _bytes_feature(tf.compat.as_bytes(img.tostring()))}
             # Create an example protocol buffer
             example = tf.train.Example(features=tf.train.Features(feature=feature))
             # Serialize to string and write on the file
@@ -113,6 +109,7 @@ def write_tfrecord_file(thread_num, start_index, end_index, addrs, labels, data_
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
+# TODO: This function is no longer used - Delete?
 def generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac):
     # read addresses and labels from the 'train' folder
     addrs = glob.glob(cat_dog_train_path)
@@ -143,7 +140,8 @@ def generate_tfrecords(cat_dog_train_path, train_frac, val_frac, test_frac):
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test')
 
 
-def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, test_frac, json_to_tensors_fn, class_balancing_fn, max_records=sys.maxsize):
+def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, test_frac,
+                                 json_to_tensors_fn, class_balancing_fn, max_records=sys.maxsize):
     image_files = glob.glob(os.path.join(data_dir, "*.jpg"))
     image_files.sort()
     image_labels = glob.glob(os.path.join(data_dir, "*.json"))
@@ -161,8 +159,10 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
 
     train_addrs = balanced_images[0:int(train_frac * len(balanced_images))]
     train_labels = balanced_label_tensors[0:int(train_frac * len(balanced_label_tensors))]
-    val_addrs = balanced_images[int(train_frac * len(balanced_images)):int((train_frac + val_frac) * len(balanced_images))]
-    val_labels = balanced_label_tensors[int(train_frac * len(balanced_images)):int((train_frac + val_frac) * len(balanced_images))]
+    val_addrs = balanced_images[int(train_frac * len(balanced_images)):
+                                int((train_frac + val_frac) * len(balanced_images))]
+    val_labels = balanced_label_tensors[int(train_frac * len(balanced_images)):
+                                        int((train_frac + val_frac) * len(balanced_images))]
     test_addrs = balanced_images[int((train_frac + val_frac) * len(balanced_images)):]
     test_labels = balanced_label_tensors[int((train_frac + val_frac) * len(balanced_label_tensors)):]
     start_time = time.time()
@@ -172,7 +172,9 @@ def generate_tfrecords_for_image(data_dir, image_dims, train_frac, val_frac, tes
     parallel_write_tfrecord_file(test_addrs, test_labels, 'test', image_dims)
 
     with open("data/tfrecord_config.json", 'w') as outfile:
-            json.dump({"input_dims": image_dims, "output_dims": [len(image_label_tensors[0])], "data_split": [train_frac, val_frac, test_frac]}, outfile)
+            json.dump({"input_dims": image_dims,
+                       "output_dims": [len(image_label_tensors[0])],
+                       "data_split": [train_frac, val_frac, test_frac]}, outfile)
 
 
 # Modified from: https://www.dlology.com/blog/how-to-leverage-tensorflows-tfrecord-to-train-keras-model/
@@ -204,9 +206,6 @@ def imgs_input_fn(filenames, data_type, input_dims, output_dims, perform_shuffle
     dataset = dataset.batch(batch_size)  # Batch size to use
     # How many elements (in this case batches) get consumed per epoch?
     dataset = dataset.prefetch(buffer_size=100)
-    # My added shit
-    # iterator = dataset.make_initializable_iterator()
-    # Working code =============================
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
     return batch_features, batch_labels
@@ -221,7 +220,8 @@ def get_tfrecords(name, base_dir=os.getcwd()):
 
 
 def create_val_dir():
-    validation_save_path = os.path.join(os.getcwd(), 'data', 'validation_results', time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
+    validation_save_path = os.path.join(os.getcwd(), 'data', 'validation_results',
+                                        time.strftime("%d_%m_%Y__%H_%M_%S_validation_run"))
     if not os.path.exists(validation_save_path):
         os.makedirs(validation_save_path)
     return validation_save_path
@@ -246,7 +246,8 @@ def clear_old_tfrecords():
 
 
 def clear_dir(graph_dir):
-    if os.path.isdir('data/graphs/{}'.format(graph_dir)): shutil.rmtree('data/graphs/{}'.format(graph_dir))
+    if os.path.isdir('data/graphs/{}'.format(graph_dir)):
+        shutil.rmtree('data/graphs/{}'.format(graph_dir))
     os.makedirs('data/graphs/{}'.format(graph_dir), exist_ok=True)
 
 
