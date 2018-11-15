@@ -18,8 +18,6 @@ from PIL import Image
 import os
 import shutil
 import multiprocessing as mp
-from random import randint
-import imutils
 import time
 from PIL import Image, ImageFilter
 
