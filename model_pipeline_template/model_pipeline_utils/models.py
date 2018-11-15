@@ -13,52 +13,72 @@ def cnn_model_fn(features, labels, mode, final_dropout_rate, params):
     """Model function for CNN."""
     # Try separable conv2d - Didn't work.
     # Don't wrap blocks in name scopes - the tensorboard graph looks wack...
-    conv1 = conv_2d_layer(features, 77, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv1', summary=params["histogram_summary"])
+    conv1 = conv_2d_layer(features, 77, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv1',
+                          summary=params["histogram_summary"])
     # conv1 = tf.layers.conv2d(inputs=features, filters=77, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv1")
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, name="pool1")
-    norm1 = tf.layers.batch_normalization(inputs=pool1, axis=3, name="norm1")
-    if params["histogram_summary"]:
-        # tf.summary.histogram("conv1", conv1)
-        tf.summary.histogram("pool1", pool1)
-        tf.summary.histogram("norm1", norm1)
+    pool1 = max_pool_2d_layer(conv1, (2, 2), 2, 'pool1', params['histogram_summary'])
+    # pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, name="pool1")
+    norm1 = batch_norm_layer(pool1, 3, 'norm1', params['histogram_summary'])
+    # norm1 = tf.layers.batch_normalization(inputs=pool1, axis=3, name="norm1")
+    # if params["histogram_summary"]:
+    #     # tf.summary.histogram("conv1", conv1)
+    #     tf.summary.histogram("pool1", pool1)
+    #     tf.summary.histogram("norm1", norm1)
+    conv2 = conv_2d_layer(norm1, 64, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv2',
+                          summary=params["histogram_summary"])
+    # conv2 = tf.layers.conv2d(inputs=norm1, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv2")
+    norm2 = batch_norm_layer(conv2, 3, 'norm2', params['histogram_summary'])
+    # norm2 = tf.layers.batch_normalization(inputs=conv2, axis=3, name="norm2")
+    # if params["histogram_summary"]:
+        # tf.summary.histogram("conv2", conv2)
+        # tf.summary.histogram("norm2", norm2)
 
-    conv2 = tf.layers.conv2d(inputs=norm1, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv2")
-    norm2 = tf.layers.batch_normalization(inputs=conv2, axis=3, name="norm2")
-    if params["histogram_summary"]:
-        tf.summary.histogram("conv2", conv2)
-        tf.summary.histogram("norm2", norm2)
+    conv3 = conv_2d_layer(norm2, 64, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv3',
+                          summary=params["histogram_summary"])
+    # conv3 = tf.layers.conv2d(inputs=norm2, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv3")
+    pool3 = max_pool_2d_layer(conv3, (2, 2), 2, 'pool3', params['histogram_summary'])
+    # pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2, name="pool3")
+    norm3 = batch_norm_layer(pool3, 3, 'norm3', params['histogram_summary'])
+    # norm3 = tf.layers.batch_normalization(inputs=pool3, axis=3, name="norm3")
+    # if params["histogram_summary"]:
+        # tf.summary.histogram("conv3", conv3)
+        # tf.summary.histogram("pool3", pool3)
+        # tf.summary.histogram("norm3", norm3)
 
-    conv3 = tf.layers.conv2d(inputs=norm2, filters=64, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv3")
-    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2, name="pool3")
-    norm3 = tf.layers.batch_normalization(inputs=pool3, axis=3, name="norm3")
-    if params["histogram_summary"]:
-        tf.summary.histogram("conv3", conv3)
-        tf.summary.histogram("pool3", pool3)
-        tf.summary.histogram("norm3", norm3)
+    conv4 = conv_2d_layer(norm3, 32, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv4',
+                          summary=params["histogram_summary"])
+    # conv4 = tf.layers.conv2d(inputs=norm3, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv4")
+    norm4 = batch_norm_layer(conv4, 3, 'norm4', params['histogram_summary'])
+    # norm4 = tf.layers.batch_normalization(inputs=conv4, axis=3, name="norm4")
+    # if params["histogram_summary"]:
+        # tf.summary.histogram("conv4", conv4)
+        # tf.summary.histogram("norm4", norm4)
 
-    conv4 = tf.layers.conv2d(inputs=norm3, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv4")
-    norm4 = tf.layers.batch_normalization(inputs=conv4, axis=3, name="norm4")
-    if params["histogram_summary"]:
-        tf.summary.histogram("conv4", conv4)
-        tf.summary.histogram("norm4", norm4)
+    conv5 = conv_2d_layer(norm4, 32, [3, 3], "same", 'leaky_relu', 'he_normal', 'conv5',
+                          summary=params["histogram_summary"])
+    # conv5 = tf.layers.conv2d(inputs=norm4, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv5")
+    pool5 = max_pool_2d_layer(conv5, (2, 2), 2, 'pool5', params['histogram_summary'])
+    # pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2, 2], strides=2, name="pool5")
+    norm5 = batch_norm_layer(pool5, 3, 'norm5', params['histogram_summary'])
+    # norm5 = tf.layers.batch_normalization(inputs=pool5, axis=3, name="norm5")
+    # if params["histogram_summary"]:
+        # tf.summary.histogram("conv5", conv5)
+        # tf.summary.histogram("pool5", pool5)
+        # tf.summary.histogram("norm5", norm5)
 
-    conv5 = tf.layers.conv2d(inputs=norm4, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.leaky_relu, kernel_initializer=tf.keras.initializers.he_normal(), name="conv5")
-    pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2, 2], strides=2, name="pool5")
-    norm5 = tf.layers.batch_normalization(inputs=pool5, axis=3, name="norm5")
-    if params["histogram_summary"]:
-        tf.summary.histogram("conv5", conv5)
-        tf.summary.histogram("pool5", pool5)
-        tf.summary.histogram("norm5", norm5)
+    pool5_flat = flatten_layer(norm5, 'pool5_flat', params['histogram_summary'])
+    # pool5_flat = tf.layers.flatten(inputs=norm5, name="pool5_flat")
+    dense = dense_layer(pool5_flat, 42, 'dense', 'leaky_relu', summary=params['histogram_summary'])
+    # dense = tf.layers.dense(inputs=pool5_flat, units=42, activation=tf.nn.leaky_relu, name="dense")
+    dropout = dropout_layer(dense, final_dropout_rate, mode, 'dropout', params['histogram_summary'])
+    # dropout = tf.layers.dropout(inputs=dense, rate=final_dropout_rate, training=mode, name="dropout")
+    # if params["histogram_summary"]:
+    #     tf.summary.histogram("pool5_flat", pool5_flat)
+    #     tf.summary.histogram("dense", dense)
+    #     tf.summary.histogram("dropout", dropout)
 
-    pool5_flat = tf.layers.flatten(inputs=norm5, name="pool5_flat")
-    dense = tf.layers.dense(inputs=pool5_flat, units=42, activation=tf.nn.leaky_relu, name="dense")
-    dropout = tf.layers.dropout(inputs=dense, rate=final_dropout_rate, training=mode, name="dropout")
-    if params["histogram_summary"]:
-        tf.summary.histogram("pool5_flat", pool5_flat)
-        tf.summary.histogram("dense", dense)
-        tf.summary.histogram("dropout", dropout)
-
-    logits = tf.layers.dense(inputs=dropout, units=2, name="logits")
+    logits = dense_layer(dropout, 2, 'logits', summary=params['histogram_summary'])
+    # logits = tf.layers.dense(inputs=dropout, units=2, name="logits")
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
