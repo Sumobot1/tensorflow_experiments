@@ -77,3 +77,10 @@ def mean_softmax_cross_entropy_with_logits(labels, logits, params):
     if params["loss_summary"]:
         tf.summary.scalar("loss", loss)
     return loss
+
+
+def softmax_classifier_output(logits, labels, predictions, mode, params):
+    # If predict and not return_extimator, return predictions
+    return tf.cond(mode,
+                   lambda: (mean_softmax_cross_entropy_with_logits(labels, logits, params), predictions),
+                   lambda: (tf.constant(0, dtype=tf.float32), predictions))
