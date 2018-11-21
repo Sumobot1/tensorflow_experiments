@@ -9,3 +9,8 @@ def fast_cnn_model_fn(features, labels, mode, params):
     """Model function for CNN."""
     from tf_models.debugging_cnn import fast_cnn_model_fn
     return fast_cnn_model_fn(features, labels, mode, params)
+
+
+def yolo_v3():
+    from tf_models.yolo_v3 import yolo_v3_model_fn
+    return yolo_v3_model_fn()

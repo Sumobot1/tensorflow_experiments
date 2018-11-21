@@ -7,7 +7,8 @@ activation_fns = {
     'none': None
 }
 kernel_initializers = {
-    'he_normal': tf.keras.initializers.he_normal()
+    'he_normal': tf.keras.initializers.he_normal(),
+    'glorot_uniform': tf.keras.initializers.glorot_uniform()
 }
 
 
@@ -22,10 +23,20 @@ def reshape_layer(input_layer, output_shape):
     return tf.reshape(input_layer, output_shape)
 
 
-# filter_size: number - how many nodes in convolution (32 - 32x32 convolution)
+# num_filters: number - how many nodes in convolution (32 - 32x32 convolution)
 # kernel_size: array - dimensions of kernel (ex. [3, 3])
-def conv_2d_layer(input_layer, filter_size, kernel_size, padding_type, activation_fn, initializer, layer_name, summary=False):
-    layer = tf.layers.conv2d(inputs=input_layer, filters=filter_size, kernel_size=kernel_size, padding=padding_type, activation=activation_fns[activation_fn], kernel_initializer=kernel_initializers[initializer], name=layer_name)
+def conv_2d_layer(input_layer, num_filters, kernel_size, padding_type, activation_fn, initializer, layer_name,
+                  strides=(1, 1), kernel_regularizer=None, use_bias=True, trainable=True, summary=False):
+    layer = tf.layers.conv2d(inputs=input_layer,
+                             filters=num_filters,
+                             kernel_size=kernel_size,
+                             strides=strides,
+                             padding=padding_type,
+                             activation=activation_fns[str(activation_fn).lower()],
+                             use_bias=use_bias,
+                             kernel_initializer=kernel_initializers[initializer],
+                             kernel_regularizer=kernel_regularizer,
+                             name=layer_name)
     _layer_histogram(layer_name, layer, summary)
     # if summary:
     #     tf.summary.histogram(layer_name, layer)
@@ -84,3 +95,8 @@ def softmax_classifier_output(logits, labels, predictions, mode, params):
     return tf.cond(mode,
                    lambda: (mean_softmax_cross_entropy_with_logits(labels, logits, params), predictions),
                    lambda: (tf.constant(0, dtype=tf.float32), predictions))
+
+def leaky_relu_layer(input_layer, layer_name, alpha=0.3, summary=False):
+    layer = tf.nn.leaky_relu(input_layer, alpha=alpha)
+    _layer_histogram(layer_name, layer, summary)
+    return layer
