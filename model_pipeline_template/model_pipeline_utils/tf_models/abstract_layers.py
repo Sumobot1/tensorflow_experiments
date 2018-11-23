@@ -100,3 +100,14 @@ def leaky_relu_layer(input_layer, layer_name, alpha=0.3, summary=False):
     layer = tf.nn.leaky_relu(input_layer, alpha=alpha)
     _layer_histogram(layer_name, layer, summary)
     return layer
+
+def upsampling_2d_layer(input_layer, layer_name, summary=False):
+    input_dims = input_layer.shape.as_list()
+    layer = tf.image.resize_nearest_neighbor(input_layer, (2*input_dims[1], 2*input_dims[2]))
+    _layer_histogram(layer_name, layer, summary)
+    return layer
+
+def concat_layer(values, axis, layer_name, summary=False):
+    layer = tf.concat(values, axis, name=layer_name)
+    _layer_histogram(layer_name, layer, summary)
+    return layer

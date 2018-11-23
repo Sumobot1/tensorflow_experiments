@@ -1,12 +1,12 @@
 import tensorflow as tf
-from model_pipeline_utils.tf_models.abstract_layers import conv_2d_layer, batch_norm_layer, leaky_relu_layer
+from model_pipeline_utils.tf_models.abstract_layers import conv_2d_layer, batch_norm_layer, leaky_relu_layer, upsampling_2d_layer, concat_layer
 
 
 def l1_l2_reg(l1=0.0, l2=0.0):
     return tf.keras.regularizers.L1L2(l1, l2)
 
 
-def darknet_conv2d(input_layer, num_filters, kernel_size, layer_name, use_bias, strides=(1, 1), summary=False):
+def darknet_conv2d(input_layer, num_filters, kernel_size, layer_name, use_bias=True, strides=(1, 1), summary=False):
     padding = 'valid' if strides == (2, 2) else 'same'
     return conv_2d_layer(input_layer, num_filters, kernel_size, padding, None, 'glorot_uniform', layer_name,
                          strides=strides, kernel_regularizer=l1_l2_reg(l2=5e-4), use_bias=use_bias, summary=summary)
@@ -45,6 +45,18 @@ def darknet_body(image_input):
     return x
 
 
+def make_last_layers(input_layer, num_filters, num_outputs, output_identifier):
+    x = darknet_conv2d_bn_leaky(input_layer, num_filters, (1, 1), layer_num="x_output_{}_layer_{}".format(output_identifier, 0))
+    x = darknet_conv2d_bn_leaky(x, num_filters * 2, (3, 3), layer_num="x_output_{}_layer_{}".format(output_identifier, 1))
+    x = darknet_conv2d_bn_leaky(x, num_filters, (1, 1), layer_num="x_output_{}_layer_{}".format(output_identifier, 2))
+    x = darknet_conv2d_bn_leaky(x, num_filters * 2, (3, 3), layer_num="x_output_{}_layer_{}".format(output_identifier, 3))
+    x = darknet_conv2d_bn_leaky(x, num_filters, (1, 1), layer_num="x_output_{}_layer_{}".format(output_identifier, 4))
+
+    y = darknet_conv2d_bn_leaky(x, num_filters * 2, (3, 3), layer_num="y_output_{}_layer_{}".format(output_identifier, 0))
+    y = darknet_conv2d(y, num_outputs, (1, 1), layer_name="y_output_{}_layer_{}".format(output_identifier, 1))
+    return x, y
+
+
 def yolo_body(image_input, num_anchors, num_classes):
     """
     image_input: [None, None, 3]
@@ -53,3 +65,8 @@ def yolo_body(image_input, num_anchors, num_classes):
     num_classes
     """
     # image_input = tf.placeholder(shape=(None, None, 3), dtype=tf.float32)
+    darknet_output = darknet_body(image_input)
+    x, y1 = make_last_layers(darknet_output, 512, num_anchors*(num_classes + 5), 1)
+    x = darknet_conv2d_bn_leaky(x, 256, (1, 1), layer_num="x_upsampling_0")
+    x = upsampling_2d_layer(x, "x_upsampling_1")
+
