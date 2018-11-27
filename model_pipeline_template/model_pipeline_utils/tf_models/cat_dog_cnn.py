@@ -1,5 +1,6 @@
 import tensorflow as tf
-from model_pipeline_utils.tf_models.abstract_layers import conv_2d_layer, max_pool_2d_layer, flatten_layer, dense_layer, dropout_layer, mean_softmax_cross_entropy_with_logits, batch_norm_layer, softmax_classifier_output
+from model_pipeline_utils.tf_models.abstract_layers import conv_2d_layer, max_pool_2d_layer, flatten_layer, \
+    dense_layer, dropout_layer, mean_softmax_cross_entropy_with_logits, batch_norm_layer, softmax_classifier_output
 
 
 def cnn_model_fn(features, labels, mode, final_dropout_rate, params):
