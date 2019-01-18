@@ -31,5 +31,7 @@ As with most experiments, this repo is a bit messy.  I will continue to expand/r
 		- validation_analysis
 			- Jupyter notebooks to analyze training and validation images/results
 	- Currently using the Model Training Pipeline as a base to work on implementing the YOLOv3 object detection network based on [this paper](https://pjreddie.com/media/files/papers/YOLOv3.pdf)
+- random
+	- Random code snippets I write or adapt from somewhere online that don't belong anywhere else
 - TODO: kaggle_problems
 	- After I have cleaned up/organized them, I would like to add my dog/cat and toxic comment classifiers
